@@ -1,0 +1,42 @@
+# FastAPI Backend Requirements
+# Core FastAPI dependencies
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+python-multipart==0.0.6
+
+# AI/ML Core
+torch==2.6.0
+torchvision==0.21.0
+transformers==4.51.3
+diffusers==0.33.1
+accelerate==0.32.0
+
+# DreamO dependencies
+optimum-quanto==0.2.7
+einops
+timm
+sentencepiece
+peft
+
+# OmniGen2 dependencies  
+dfloat11[cuda12]
+opencv-python-headless
+scipy
+matplotlib
+Pillow
+tqdm
+omegaconf
+ninja
+
+# Image processing
+numpy
+pillow
+
+# Utility
+python-dotenv
+logging
+
+# Development and monitoring (optional)
+# pytest==7.4.3
+# pytest-asyncio==0.21.1 
