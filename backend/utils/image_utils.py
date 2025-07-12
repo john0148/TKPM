@@ -5,34 +5,69 @@ Image utility functions for FastAPI backend
 import base64
 import io
 import time
-from typing import List, Optional, Tuple, Any
+from typing import List, Optional, Tuple, Any, Union
 from PIL import Image
 import numpy as np
 import logging
 
 logger = logging.getLogger(__name__)
 
-def encode_image_to_base64(image: Image.Image, format: str = "PNG") -> str:
+def convert_to_pil_image(image: Any) -> Image.Image:
     """
-    Encode PIL Image to base64 string
+    Convert numpy array or PIL Image to PIL Image
     
     Args:
-        image: PIL Image object
+        image: PIL Image object or numpy array
+        
+    Returns:
+        PIL Image object
+        
+    Raises:
+        ValueError: If image type is not supported
+    """
+    if isinstance(image, np.ndarray):
+        # Handle different numpy array formats
+        if image.dtype == np.uint8:
+            return Image.fromarray(image)
+        elif image.dtype == np.float32 or image.dtype == np.float64:
+            # Convert float array to uint8 (assuming range 0-1 or 0-255)
+            if image.max() <= 1.0:
+                image = (image * 255).astype(np.uint8)
+            else:
+                image = image.astype(np.uint8)
+            return Image.fromarray(image)
+        else:
+            # Try direct conversion
+            return Image.fromarray(image.astype(np.uint8))
+    elif isinstance(image, Image.Image):
+        return image
+    else:
+        raise ValueError(f"Unsupported image type: {type(image)}")
+
+def encode_image_to_base64(image: Any, format: str = "PNG") -> str:
+    """
+    Encode PIL Image or numpy array to base64 string
+    
+    Args:
+        image: PIL Image object or numpy array
         format: Image format (PNG, JPEG, etc.)
         
     Returns:
         Base64 encoded string with data URI prefix
     """
     try:
+        # Convert to PIL Image
+        pil_image = convert_to_pil_image(image)
+        
         buffer = io.BytesIO()
         
         # Convert RGBA to RGB for JPEG
-        if format.upper() == "JPEG" and image.mode == "RGBA":
-            background = Image.new("RGB", image.size, (255, 255, 255))
-            background.paste(image, mask=image.split()[-1] if image.mode == "RGBA" else None)
-            image = background
+        if format.upper() == "JPEG" and pil_image.mode == "RGBA":
+            background = Image.new("RGB", pil_image.size, (255, 255, 255))
+            background.paste(pil_image, mask=pil_image.split()[-1] if pil_image.mode == "RGBA" else None)
+            pil_image = background
         
-        image.save(buffer, format=format, quality=95 if format.upper() == "JPEG" else None)
+        pil_image.save(buffer, format=format, quality=95 if format.upper() == "JPEG" else None)
         buffer.seek(0)
         
         image_bytes = buffer.getvalue()
@@ -77,12 +112,12 @@ def decode_base64_to_image(base64_string: str) -> Image.Image:
         logger.error(f"Error decoding base64 to image: {e}")
         raise ValueError(f"Invalid base64 image data: {e}")
 
-def encode_image_list_to_base64(images: List[Image.Image], format: str = "PNG") -> List[str]:
+def encode_image_list_to_base64(images: List[Any], format: str = "PNG") -> List[str]:
     """
-    Encode list of PIL Images to base64 strings
+    Encode list of PIL Images or numpy arrays to base64 strings
     
     Args:
-        images: List of PIL Image objects
+        images: List of PIL Image objects or numpy arrays
         format: Image format (PNG, JPEG, etc.)
         
     Returns:
@@ -120,12 +155,12 @@ def decode_base64_list_to_images(base64_strings: List[str]) -> List[Image.Image]
         logger.error(f"Error decoding base64 list to images: {e}")
         raise e
 
-def validate_image_size(image: Image.Image, max_width: int = 2048, max_height: int = 2048, max_pixels: int = 4194304) -> bool:
+def validate_image_size(image: Any, max_width: int = 2048, max_height: int = 2048, max_pixels: int = 4194304) -> bool:
     """
     Validate image dimensions and pixel count
     
     Args:
-        image: PIL Image object
+        image: PIL Image object or numpy array
         max_width: Maximum allowed width
         max_height: Maximum allowed height  
         max_pixels: Maximum allowed total pixels
@@ -134,7 +169,10 @@ def validate_image_size(image: Image.Image, max_width: int = 2048, max_height: i
         True if image is valid, False otherwise
     """
     try:
-        width, height = image.size
+        # Convert to PIL Image
+        pil_image = convert_to_pil_image(image)
+        
+        width, height = pil_image.size
         total_pixels = width * height
         
         if width > max_width or height > max_height:
@@ -147,16 +185,19 @@ def validate_image_size(image: Image.Image, max_width: int = 2048, max_height: i
             
         return True
         
+    except ValueError as e:
+        logger.error(f"Unsupported image type for validation: {e}")
+        return False
     except Exception as e:
         logger.error(f"Error validating image size: {e}")
         return False
 
-def resize_image_if_needed(image: Image.Image, max_width: int = 2048, max_height: int = 2048, max_pixels: int = 4194304) -> Image.Image:
+def resize_image_if_needed(image: Any, max_width: int = 2048, max_height: int = 2048, max_pixels: int = 4194304) -> Image.Image:
     """
     Resize image if it exceeds limits while maintaining aspect ratio
     
     Args:
-        image: PIL Image object
+        image: PIL Image object or numpy array
         max_width: Maximum allowed width
         max_height: Maximum allowed height
         max_pixels: Maximum allowed total pixels
@@ -165,12 +206,15 @@ def resize_image_if_needed(image: Image.Image, max_width: int = 2048, max_height
         Resized PIL Image object
     """
     try:
-        width, height = image.size
+        # Convert to PIL Image
+        pil_image = convert_to_pil_image(image)
+        
+        width, height = pil_image.size
         total_pixels = width * height
         
         # Check if resize is needed
         if width <= max_width and height <= max_height and total_pixels <= max_pixels:
-            return image
+            return pil_image
         
         # Calculate resize ratio based on dimensions
         width_ratio = max_width / width if width > max_width else 1.0
@@ -188,11 +232,14 @@ def resize_image_if_needed(image: Image.Image, max_width: int = 2048, max_height
         new_height = int(height * final_ratio)
         
         # Resize image
-        resized_image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+        resized_image = pil_image.resize((new_width, new_height), Image.Resampling.LANCZOS)
         
         logger.info(f"Resized image from {width}x{height} to {new_width}x{new_height}")
         return resized_image
         
+    except ValueError as e:
+        logger.error(f"Unsupported image type for resizing: {e}")
+        return image
     except Exception as e:
         logger.error(f"Error resizing image: {e}")
         return image
@@ -220,7 +267,7 @@ def create_error_response(error_message: str, generation_time: Optional[float] =
     return response
 
 def create_success_response(
-    image: Image.Image, 
+    image: Any, 
     additional_data: Optional[dict] = None,
     generation_time: Optional[float] = None,
     format: str = "PNG"
@@ -229,7 +276,7 @@ def create_success_response(
     Create standardized success response
     
     Args:
-        image: Generated PIL Image
+        image: Generated PIL Image or numpy array
         additional_data: Additional data to include in response
         generation_time: Time taken for generation
         format: Image format for encoding
@@ -255,6 +302,49 @@ def create_success_response(
     except Exception as e:
         logger.error(f"Error creating success response: {e}")
         return create_error_response(f"Failed to encode response image: {e}", generation_time)
+
+def process_uploaded_image(uploaded_file) -> Image.Image:
+    """
+    Process uploaded file từ FastAPI UploadFile và convert thành PIL Image
+    
+    Args:
+        uploaded_file: FastAPI UploadFile object
+        
+    Returns:
+        PIL Image object
+        
+    Raises:
+        ValueError: If file is not a valid image
+    """
+    try:
+        # Read file content
+        file_content = uploaded_file.file.read()
+        
+        # Validate file is not empty
+        if len(file_content) == 0:
+            raise ValueError("Uploaded file is empty")
+            
+        # Create PIL Image from bytes
+        image = Image.open(io.BytesIO(file_content))
+        
+        # Convert to RGB if necessary
+        if image.mode not in ['RGB', 'RGBA']:
+            image = image.convert('RGB')
+            
+        # Validate and resize if needed
+        if not validate_image_size(image):
+            image = resize_image_if_needed(image)
+            
+        logger.info(f"Processed uploaded image: {image.size}, mode: {image.mode}")
+        return image
+        
+    except Exception as e:
+        logger.error(f"Error processing uploaded image: {e}")
+        raise ValueError(f"Cannot process uploaded image: {e}")
+    finally:
+        # Reset file pointer
+        if hasattr(uploaded_file.file, 'seek'):
+            uploaded_file.file.seek(0)
 
 class TimingContext:
     """Context manager for timing operations"""

@@ -5,6 +5,7 @@ FastAPI Backend for DreamO and OmniGen2 Services
 import os
 import sys
 import logging
+import torch
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
@@ -18,7 +19,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'OmniGen2-DFloat11
 
 from models.dreamo_model import DreamOModel
 from models.omnigen2_model import OmniGen2Model
-from routes import dreamo, omnigen2
+from routes import dreamo, omnigen2, training
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -36,24 +37,31 @@ async def lifespan(app: FastAPI):
     logger.info("Loading models...")
     
     try:
-        # Load DreamO model with nunchaku
-        logger.info("Loading DreamO model...")
+        # Load DreamO model first (cuda:0)
+        logger.info("Loading DreamO model on cuda:0...")
         dreamo_model = DreamOModel()
+        logger.info("✅ DreamO model loaded successfully on cuda:0")
         
-        # Load OmniGen2 model  
-        logger.info("Loading OmniGen2 model...")
+        # Load OmniGen2 model second (cuda:1)
+        logger.info("Loading OmniGen2 model on cuda:1...")
         omnigen2_model = OmniGen2Model()
+        logger.info("✅ OmniGen2 model loaded successfully on cuda:1")
         
-        logger.info("All models loaded successfully!")
+        logger.info("🎉 All models loaded successfully!")
         
     except Exception as e:
-        logger.error(f"Failed to load models: {e}")
-        raise e
+        logger.error(f"❌ Failed to load models: {e}")
+        # Don't raise here, let the app start with partial functionality
+        logger.warning("App will start with limited functionality")
         
     yield
     
     # Cleanup on shutdown
     logger.info("Shutting down...")
+    if dreamo_model:
+        logger.info("Cleaning up DreamO model...")
+    if omnigen2_model:
+        logger.info("Cleaning up OmniGen2 model...")
 
 # Create FastAPI app with lifespan
 app = FastAPI(
@@ -75,6 +83,7 @@ app.add_middleware(
 # Include routers
 app.include_router(dreamo.router, prefix="/api/dreamo", tags=["DreamO"])
 app.include_router(omnigen2.router, prefix="/api/omnigen2", tags=["OmniGen2"])
+app.include_router(training.router, prefix="/api", tags=["Training"])
 
 @app.get("/")
 async def root():
@@ -86,12 +95,25 @@ async def health_check():
     """Detailed health check"""
     global dreamo_model, omnigen2_model
     
+    dreamo_info = {
+        "loaded": dreamo_model is not None,
+        "device": dreamo_model.get_device_info() if dreamo_model else None,
+        "healthy": dreamo_model.health_check() if dreamo_model else False
+    }
+    
+    omnigen2_info = {
+        "loaded": omnigen2_model is not None,
+        "device": omnigen2_model.get_device_info() if omnigen2_model else None,
+        "healthy": omnigen2_model.health_check() if omnigen2_model else False
+    }
+    
     return {
-        "status": "healthy",
+        "status": "healthy" if (dreamo_info["loaded"] or omnigen2_info["loaded"]) else "degraded",
         "models": {
-            "dreamo": dreamo_model is not None,
-            "omnigen2": omnigen2_model is not None
-        }
+            "dreamo": dreamo_info,
+            "omnigen2": omnigen2_info
+        },
+        "cuda_devices": torch.cuda.device_count() if torch.cuda.is_available() else 0
     }
 
 @app.exception_handler(Exception)

@@ -35,8 +35,20 @@ pillow
 
 # Utility
 python-dotenv
-logging
+# logging
+
+# Training additional dependencies
+datasets>=2.14.0
+safetensors>=0.4.0
+PyYAML>=6.0
+
+# Optional logging for training
+wandb>=0.15.0
+tensorboard>=2.14.0
 
 # Development and monitoring (optional)
 # pytest==7.4.3
 # pytest-asyncio==0.21.1 
+opencv-python==4.8.1.78
+numpy==1.26.4
+torchdiffeq

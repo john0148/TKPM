@@ -17,3 +17,5 @@ ninja
 ipykernel
 dfloat11[cuda12]
 python-dotenv
+wheel
+triton-windows; sys_platform == "win32"

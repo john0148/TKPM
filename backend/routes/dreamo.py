@@ -53,6 +53,8 @@ async def generate_image(
     multi-modal generation scenarios.
     """
     
+    logger.info(f"Received DreamO request - prompt: '{request.prompt}', ref_images: {len(request.ref_images)}")
+    
     with TimingContext() as timer:
         try:
             logger.info(f"Generating image with {len(request.ref_images)} reference images")
@@ -162,14 +164,7 @@ async def health_check(model = Depends(get_dreamo_model)):
         is_healthy = model.health_check()
         
         # Get device info
-        device = "unknown"
-        try:
-            if hasattr(model.generator, 'device'):
-                device = str(model.generator.device)
-            elif hasattr(model.generator, 'dreamo_pipeline'):
-                device = str(model.generator.dreamo_pipeline.device)
-        except:
-            pass
+        device = model.get_device_info()
         
         return DreamOHealthResponse(
             healthy=is_healthy,

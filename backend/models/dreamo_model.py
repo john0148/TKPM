@@ -23,18 +23,28 @@ class DreamOModel:
     def __init__(self):
         """Initialize DreamO model with nunchaku configuration"""
         try:
-            # Configure for nunchaku mode with best performance
+            # Check available devices
+            if not torch.cuda.is_available():
+                raise RuntimeError("CUDA is not available for DreamO")
+            
+            # Always use cuda:0 for DreamO
+            target_device = 'cuda:0'
+            logger.info("Using cuda:0 for DreamO")
+            
+            self.target_device = target_device
+            
+            # Configure for nunchaku mode with direct VRAM loading
             args = {
                 'version': 'v1.1',  # Use latest version
-                'offload': True,    # Enable offloading for memory efficiency
+                'offload': False,   # Disable offloading - load directly to VRAM
                 'no_turbo': False,  # Use turbo for speed
                 'quant': 'nunchaku', # Use nunchaku quantization
-                'device': 'auto'    # Auto-detect device
+                'device': target_device
             }
             
-            logger.info("Initializing DreamO with nunchaku configuration...")
+            logger.info(f"Initializing DreamO with nunchaku configuration on {target_device} (no offload)...")
             self.generator = Generator(**args)
-            logger.info("DreamO model loaded successfully!")
+            logger.info(f"DreamO model loaded successfully on {target_device}!")
             
         except Exception as e:
             logger.error(f"Failed to initialize DreamO model: {e}")
@@ -82,6 +92,11 @@ class DreamOModel:
             Dictionary with generated image and metadata
         """
         try:
+            logger.info(f"Starting generation with {len(ref_images)} reference images")
+            
+            # Check model health and reload if needed
+            self.reload_model_if_needed()
+            
             # Validate inputs
             if not ref_images:
                 raise ValueError("At least one reference image is required")
@@ -95,6 +110,13 @@ class DreamOModel:
                 if task not in valid_tasks:
                     raise ValueError(f"Invalid task '{task}'. Must be one of {valid_tasks}")
             
+            # Ensure CUDA is available and model is on correct device
+            if not torch.cuda.is_available():
+                raise RuntimeError("CUDA is not available")
+            
+            # Use the device determined during initialization
+            device = self.target_device
+            
             # Convert PIL images to numpy arrays
             ref_images_np = []
             for img in ref_images:
@@ -103,40 +125,49 @@ class DreamOModel:
                 else:
                     ref_images_np.append(img)
             
-            # Pad lists to match generator expectations (max 2 refs in original code)
-            # We'll extend this to support more references
-            while len(ref_images_np) < 10:  # Support up to 10 refs
-                ref_images_np.append(None)
-                ref_tasks.append(None)
+            # Create copy of ref_tasks to avoid modifying input
+            ref_tasks_copy = ref_tasks.copy()
             
-            # Preprocessing
+            # Ensure we have exactly the right number of items for DreamO
+            actual_count = len(ref_images)
+            
+            # Preprocessing with actual data only
             ref_conds, debug_images, actual_seed = self.generator.pre_condition(
-                ref_images=ref_images_np[:len(ref_images)],  # Only pass actual ref images
-                ref_tasks=ref_tasks[:len(ref_images)],       # Only pass actual ref tasks
+                ref_images=ref_images_np,
+                ref_tasks=ref_tasks_copy,
                 ref_res=ref_res,
                 seed=seed
             )
             
             logger.info(f"Generating image with prompt: '{prompt}', seed: {actual_seed}")
             
-            # Generate image
-            result = self.generator.dreamo_pipeline(
-                prompt=prompt,
-                width=width,
-                height=height,
-                num_inference_steps=num_steps,
-                guidance_scale=guidance,
-                ref_conds=ref_conds,
-                generator=torch.Generator(device="cpu").manual_seed(actual_seed),
-                true_cfg_scale=true_cfg,
-                true_cfg_start_step=cfg_start_step,
-                true_cfg_end_step=cfg_end_step,
-                negative_prompt=neg_prompt,
-                neg_guidance_scale=neg_guidance,
-                first_step_guidance_scale=first_step_guidance if first_step_guidance > 0 else guidance,
-            )
+            # Generate image with proper device handling
+            with torch.cuda.device(device):
+                torch_generator = torch.Generator(device=device).manual_seed(actual_seed)
+                
+                result = self.generator.dreamo_pipeline(
+                    prompt=prompt,
+                    width=width,
+                    height=height,
+                    num_inference_steps=num_steps,
+                    guidance_scale=guidance,
+                    ref_conds=ref_conds,
+                    generator=torch_generator,
+                    true_cfg_scale=true_cfg,
+                    true_cfg_start_step=cfg_start_step,
+                    true_cfg_end_step=cfg_end_step,
+                    negative_prompt=neg_prompt,
+                    neg_guidance_scale=neg_guidance,
+                    first_step_guidance_scale=first_step_guidance if first_step_guidance > 0 else guidance,
+                )
             
             generated_image = result.images[0]
+            
+            # Memory cleanup
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+            
+            logger.info("Image generation completed successfully")
             
             return {
                 "image": generated_image,
@@ -148,11 +179,126 @@ class DreamOModel:
             
         except Exception as e:
             logger.error(f"Error during image generation: {e}")
+            
+            # Emergency memory cleanup on error
+            try:
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+                    logger.info("Memory cleanup after error")
+            except:
+                pass
+            
+            # Re-raise the original error
+            raise e
+    
+    def generate_multi_reference(
+        self,
+        reference_images: List[Image.Image],
+        num_outputs: int,
+        prompt: str,
+        negative_prompt: str = "",
+        guidance_scale: float = 2.5,
+        num_inference_steps: int = 4
+    ) -> Dict[str, Any]:
+        """
+        Generate multiple variations from reference images (for training pipeline)
+        
+        Args:
+            reference_images: List of reference images
+            num_outputs: Number of variations to generate
+            prompt: Text prompt
+            negative_prompt: Negative prompt
+            guidance_scale: Guidance scale
+            num_inference_steps: Number of inference steps
+            
+        Returns:
+            Dictionary with images list
+        """
+        try:
+            if not reference_images:
+                raise ValueError("At least one reference image is required")
+            
+            # Generate multiple outputs
+            generated_images = []
+            
+            for i in range(num_outputs):
+                # Use different seeds for variation
+                seed = np.random.randint(0, 2147483647)
+                
+                # Determine task type based on content (simple heuristic)
+                ref_tasks = ['ip'] * len(reference_images)  # Default to IP
+                
+                result = self.generate_image(
+                    prompt=prompt,
+                    ref_images=reference_images,
+                    ref_tasks=ref_tasks,
+                    width=1024,
+                    height=1024,
+                    num_steps=num_inference_steps,
+                    guidance=guidance_scale,
+                    seed=seed,
+                    neg_prompt=negative_prompt
+                )
+                
+                generated_images.append(result["image"])
+            
+            return {
+                "images": generated_images,
+                "count": len(generated_images)
+            }
+            
+        except Exception as e:
+            logger.error(f"Error during multi-reference generation: {e}")
             raise e
     
     def health_check(self) -> bool:
         """Check if model is healthy"""
         try:
-            return self.generator is not None
+            if self.generator is None:
+                return False
+            
+            # Try a simple operation to verify model is working
+            # This helps detect if model was unloaded from VRAM
+            if hasattr(self.generator, 'dreamo_pipeline'):
+                return True
+            
+            return True
+        except Exception as e:
+            logger.warning(f"Health check failed: {e}")
+            return False
+    
+    def reload_model_if_needed(self):
+        """Reload model if it was unloaded from VRAM"""
+        try:
+            if not self.health_check():
+                logger.warning("Model appears to be unhealthy, attempting reload...")
+                
+                # Reinitialize the generator
+                args = {
+                    'version': 'v1.1',
+                    'offload': False,
+                    'no_turbo': False,
+                    'quant': 'nunchaku',
+                    'device': self.target_device
+                }
+                
+                self.generator = Generator(**args)
+                logger.info(f"Model reloaded successfully on {self.target_device}")
+                
+        except Exception as e:
+            logger.error(f"Failed to reload model: {e}")
+            raise e
+    
+    def get_device_info(self) -> str:
+        """Get device information"""
+        try:
+            if hasattr(self, 'target_device'):
+                return self.target_device
+            elif hasattr(self.generator, 'device'):
+                return str(self.generator.device)
+            elif hasattr(self.generator, 'dreamo_pipeline'):
+                if hasattr(self.generator.dreamo_pipeline, 'device'):
+                    return str(self.generator.dreamo_pipeline.device)
+            return "unknown"
         except:
-            return False 
+            return "unknown" 

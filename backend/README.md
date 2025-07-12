@@ -1,6 +1,6 @@
 # AI Image Generation Backend
 
-Backend FastAPI cho DreamO và OmniGen2 image generation services.
+Backend FastAPI cho DreamO và OmniGen2 image generation services với cấu hình GPU tối ưu.
 
 ## 🚀 Tính năng
 
@@ -9,12 +9,29 @@ Backend FastAPI cho DreamO và OmniGen2 image generation services.
 - **Task types**: IP (Image Prompting), ID (Face Identity), Style (Style Transfer)
 - **Nunchaku optimization**: Giảm VRAM xuống 6.5GB với tốc độ nhanh 2-4x
 - **Debug images**: Xem kết quả preprocessing (background removal, face crop)
+- **GPU**: Chạy trên cuda:0
 
 ### OmniGen2 API
 - **In-context generation**: Tổng hợp nhiều object từ các ảnh khác nhau
 - **Image editing**: Chỉnh sửa ảnh theo hướng dẫn text
 - **DFloat11 compression**: Model nén 32% mà không mất chất lượng
 - **Multiple schedulers**: Euler và DPMSolver
+- **GPU**: Chạy trên cuda:1 (fallback về cuda:0 nếu chỉ có 1 GPU)
+
+## 🖥️ GPU Configuration
+
+### Yêu cầu hệ thống
+- **Minimum**: 1 GPU với 24GB VRAM
+- **Recommended**: 2 GPUs với 24GB VRAM mỗi GPU
+- **CUDA**: 11.8+ hoặc 12.1+
+
+### Cấu hình GPU
+```
+GPU 0 (cuda:0): DreamO model
+GPU 1 (cuda:1): OmniGen2 model
+```
+
+Nếu chỉ có 1 GPU, cả hai models sẽ chạy trên cuda:0.
 
 ## 📁 Cấu trúc
 
@@ -22,8 +39,8 @@ Backend FastAPI cho DreamO và OmniGen2 image generation services.
 backend/
 ├── main.py                 # FastAPI app chính
 ├── models/                 # Model wrappers
-│   ├── dreamo_model.py     # DreamO wrapper
-│   └── omnigen2_model.py   # OmniGen2 wrapper
+│   ├── dreamo_model.py     # DreamO wrapper (cuda:0)
+│   └── omnigen2_model.py   # OmniGen2 wrapper (cuda:1)
 ├── routes/                 # API endpoints
 │   ├── dreamo.py           # DreamO routes
 │   └── omnigen2.py         # OmniGen2 routes
@@ -32,6 +49,8 @@ backend/
 │   └── omnigen2_schemas.py # OmniGen2 validation
 ├── utils/                  # Utility functions
 │   └── image_utils.py      # Image processing
+├── test_models.py          # Test script cho models
+├── start_backend.py        # Script khởi động backend
 └── requirements.txt        # Dependencies
 ```
 
@@ -41,7 +60,7 @@ backend/
 
 ```bash
 # Tạo conda environment
-conda create -n ai-backend python=3.10
+conda create -n ai-backend python=3.11
 conda activate ai-backend
 
 # Di chuyển đến thư mục backend
@@ -67,12 +86,43 @@ pip install -r requirements.txt
 pip install git+https://github.com/ToTheBeginning/facexlib.git
 ```
 
+### 4. Cài đặt Dependencies cho Training
+
+```bash
+# Cài đặt dependencies cần thiết
+pip install accelerate transformers diffusers timm PyYAML datasets huggingface_hub
+
+# Cấu hình accelerate để tránh DeepSpeed
+python setup_accelerate.py
+
+# Hoặc chạy script tự động
+bash install_dependencies.sh
+
+# Kiểm tra accelerate config
+python check_accelerate.py
+```
+
+**Lưu ý**: Training pipeline cần accelerate được cấu hình đúng để tránh lỗi DeepSpeed.
+
 ## 🚀 Chạy Backend
+
+### Kiểm tra môi trường trước
+
+```bash
+# Test models loading
+python test_models.py
+
+# Kiểm tra GPU configuration
+python -c "import torch; print(f'CUDA devices: {torch.cuda.device_count()}')"
+```
 
 ### Development Mode
 
 ```bash
-# Chạy với hot reload
+# Chạy với script tự động
+python start_backend.py
+
+# Hoặc chạy trực tiếp
 python main.py
 
 # Hoặc với uvicorn
@@ -82,10 +132,25 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ### Production Mode
 
 ```bash
+# Sử dụng script production
+python start_backend.py
+
+# Hoặc với uvicorn
 uvicorn main:app --host 0.0.0.0 --port 8000 --workers 1
 ```
 
 **Note**: Chỉ sử dụng 1 worker vì models rất nặng và không thể share giữa các processes.
+
+### Kiểm tra trạng thái
+
+```bash
+# Health check tổng quát
+curl http://localhost:8000/health
+
+# Kiểm tra từng model
+curl http://localhost:8000/api/dreamo/health
+curl http://localhost:8000/api/omnigen2/health
+```
 
 ## 📚 API Documentation
 
@@ -208,6 +273,67 @@ pip list | grep transformers
 ```bash
 # Đảm bảo PYTHONPATH đúng
 export PYTHONPATH="${PYTHONPATH}:../DreamO:../OmniGen2-DFloat11"
+```
+
+### Training Pipeline Errors
+
+#### Lỗi 'dict' object has no attribute 'images'
+```bash
+# Đã được sửa trong phiên bản mới
+# Kiểm tra training pipeline:
+python test_training.py
+```
+
+#### Lỗi Model không tương thích
+```bash
+# Test từng component:
+python test_models.py
+python test_training.py
+```
+
+#### Lỗi Memory trong Training
+```bash
+# Giảm batch size trong training_config.yml:
+# "global_batch_size": 4,  # Thay vì 8
+# "batch_size": 1,
+# "gradient_accumulation_steps": 4,  # Thay vì 8
+```
+
+#### Lỗi DeepSpeed not installed
+```bash
+# Cài đặt dependencies và cấu hình accelerate:
+pip install accelerate transformers diffusers timm PyYAML datasets huggingface_hub
+python setup_accelerate.py
+
+# Hoặc chạy script tự động:
+bash install_dependencies.sh
+```
+
+#### Lỗi Tokenizers Parallelism Warning
+```bash
+# Đã được sửa trong code, nhưng có thể set environment variable:
+export TOKENIZERS_PARALLELISM=false
+```
+
+#### Lỗi Accelerate Arguments
+```bash
+# Nếu gặp lỗi "unrecognized arguments", hãy kiểm tra accelerate config:
+python check_accelerate.py
+
+# Hoặc setup lại accelerate config:
+python setup_accelerate.py
+```
+
+#### Lỗi File Not Found
+```bash
+# Kiểm tra tất cả đường dẫn cần thiết:
+python check_paths.py
+
+# Đảm bảo cấu trúc thư mục đúng:
+# TKPM/
+# ├── backend/
+# ├── DreamO/
+# └── OmniGen2-DFloat11/
 ```
 
 ## 📊 Performance

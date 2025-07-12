@@ -31,13 +31,28 @@ class OmniGen2Model:
         try:
             logger.info("Initializing OmniGen2 with DFloat11...")
             
+            # Check available devices
+            if not torch.cuda.is_available():
+                raise RuntimeError("CUDA is not available for OmniGen2")
+            
+            # Always use cuda:1 for OmniGen2
+            if torch.cuda.device_count() >= 2:
+                target_device = 'cuda:1'
+                logger.info("Using cuda:1 for OmniGen2")
+            else:
+                target_device = 'cuda:0'
+                logger.warning("Only one CUDA device available, using cuda:0 for OmniGen2")
+            
+            self.target_device = target_device
+            
             # Default configuration
             self.config = {
                 "model_path": "OmniGen2/OmniGen2",
                 "dtype": 'bf16',
                 "enable_sequential_cpu_offload": False,
                 "enable_model_cpu_offload": False,
-                "enable_group_offload": False
+                "enable_group_offload": False,
+                "device": target_device
             }
             
             # Initialize accelerator
@@ -55,7 +70,7 @@ class OmniGen2Model:
             
             # Load pipeline
             self.pipeline = self._load_pipeline()
-            logger.info("OmniGen2 model loaded successfully!")
+            logger.info(f"OmniGen2 model loaded successfully on {target_device}!")
             
         except Exception as e:
             logger.error(f"Failed to initialize OmniGen2 model: {e}")
@@ -113,7 +128,7 @@ class OmniGen2Model:
                 bfloat16_model=pipeline.transformer,
             )
 
-            # Configure offloading
+            # Configure offloading using target_device
             if self.config["enable_sequential_cpu_offload"]:
                 pipeline.enable_sequential_cpu_offload()
             elif self.config["enable_model_cpu_offload"]:
@@ -121,27 +136,27 @@ class OmniGen2Model:
             elif self.config["enable_group_offload"]:
                 apply_group_offloading(
                     pipeline.transformer, 
-                    onload_device=self.accelerator.device, 
+                    onload_device=self.target_device, 
                     offload_type="block_level", 
                     num_blocks_per_group=2, 
                     use_stream=True
                 )
                 apply_group_offloading(
                     pipeline.mllm, 
-                    onload_device=self.accelerator.device, 
+                    onload_device=self.target_device, 
                     offload_type="block_level", 
                     num_blocks_per_group=2, 
                     use_stream=True
                 )
                 apply_group_offloading(
                     pipeline.vae, 
-                    onload_device=self.accelerator.device, 
+                    onload_device=self.target_device, 
                     offload_type="block_level", 
                     num_blocks_per_group=2, 
                     use_stream=True
                 )
             else:
-                pipeline = pipeline.to(self.accelerator.device)
+                pipeline = pipeline.to(self.target_device)
                 
             return pipeline
             
@@ -236,7 +251,7 @@ class OmniGen2Model:
                 )
             
             # Set generator
-            generator = torch.Generator(device=self.accelerator.device).manual_seed(seed)
+            generator = torch.Generator(device=self.target_device).manual_seed(seed)
             
             logger.info(f"Generating in-context image: '{instruction}'")
             
@@ -332,7 +347,7 @@ class OmniGen2Model:
                 )
             
             # Set generator
-            generator = torch.Generator(device=self.accelerator.device).manual_seed(seed)
+            generator = torch.Generator(device=self.target_device).manual_seed(seed)
             
             logger.info(f"Editing image: '{instruction}'")
             
@@ -371,4 +386,53 @@ class OmniGen2Model:
         try:
             return self.pipeline is not None
         except:
-            return False 
+            return False
+    
+    def get_device_info(self) -> str:
+        """Get device information"""
+        return self.target_device
+    
+    def generate_image(
+        self,
+        prompt: str,
+        negative_prompt: str = "",
+        num_inference_steps: int = 20,
+        guidance_scale: float = 4.0,
+        width: int = 1024,
+        height: int = 1024,
+        seed: int = 0
+    ) -> Dict[str, Any]:
+        """
+        Generate image from text prompt (for training pipeline compatibility)
+        
+        Args:
+            prompt: Text prompt
+            negative_prompt: Negative prompt
+            num_inference_steps: Number of inference steps
+            guidance_scale: Guidance scale
+            width: Output width
+            height: Output height
+            seed: Random seed
+            
+        Returns:
+            Dictionary with generated image and metadata
+        """
+        try:
+            # Use generate_in_context with no input images
+            result = self.generate_in_context(
+                instruction=prompt,
+                input_images=[],  # No input images for text-to-image
+                width=width,
+                height=height,
+                num_inference_steps=num_inference_steps,
+                text_guidance_scale=guidance_scale,
+                image_guidance_scale=1.0,
+                negative_prompt=negative_prompt,
+                seed=seed
+            )
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error during image generation: {e}")
+            raise e 
