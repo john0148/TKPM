@@ -1,0 +1,10 @@
+backend/training_data/*
+backend/DFloat11__OmniGen2-mllm-DF11/*
+backend/DFloat11__OmniGen2-transformer-DF11/*
+backend/models/*
+backend/routes/__pycache__/*
+backend/utils/__pycache__/*
+backend/schemas/__pycache__/*
+frontend/node_modules/*
+OmniGen2-DFloat11/experiments/*
+main.py
