@@ -301,33 +301,55 @@ body {
   resize: vertical;
 }
 
+/* Drag & Drop Styles */
 .file-input-wrapper {
   position: relative;
-  display: inline-block;
-  width: 100%;
+  transition: all 0.3s ease;
+  border: 2px dashed #6366f1;
+  border-radius: 12px;
+  background: rgba(99, 102, 241, 0.05);
+  backdrop-filter: blur(10px);
+}
+
+.file-input-wrapper.drag-over {
+  border-color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.1);
+  transform: scale(1.02);
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+}
+
+.file-input-wrapper.drag-over::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, transparent, rgba(139, 92, 246, 0.1), transparent);
+  border-radius: 12px;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
 .file-input {
   display: block;
-  width: 100%;
-  padding: 12px;
-  border: 2px dashed rgba(75, 85, 99, 0.5);
-  border-radius: 8px;
+  padding: 40px 20px;
   text-align: center;
   cursor: pointer;
   transition: all 0.3s ease;
-  background: rgba(31, 41, 55, 0.3);
-  color: #cbd5e1;
-  backdrop-filter: blur(10px);
+  position: relative;
+  z-index: 1;
 }
 
 .file-input:hover {
-  border-color: #8b5cf6;
-  background-color: rgba(139, 92, 246, 0.1);
-  color: #ffffff;
+  background: rgba(99, 102, 241, 0.1);
 }
 
-.file-input input {
+.file-input input[type="file"] {
   position: absolute;
   opacity: 0;
   width: 100%;
@@ -336,7 +358,16 @@ body {
 }
 
 .file-input span {
-  pointer-events: none;
+  display: block;
+  color: #e2e8f0;
+  font-size: 16px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.drag-over .file-input span {
+  color: #8b5cf6;
+  font-weight: 600;
 }
 
 .button {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { omnigen2InContextGeneration, omnigen2EditImage, fileToBase64, validateImageFile } from '../utils/api';
 
 const OmniGen2Component = ({ formData, onFormDataChange, onConfigOpen }) => {
@@ -8,6 +8,9 @@ const OmniGen2Component = ({ formData, onFormDataChange, onConfigOpen }) => {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const multiFileInputRef = useRef(null);
+  const singleFileInputRef = useRef(null);
 
   const handleInputChange = (e) => {
     const { name, value, type } = e.target;
@@ -23,11 +26,10 @@ const OmniGen2Component = ({ formData, onFormDataChange, onConfigOpen }) => {
     setEditImage(null);
     setResult(null);
     setError(null);
+    setIsDragOver(false);
   };
 
-  const handleMultiImageUpload = async (e) => {
-    const files = Array.from(e.target.files);
-    
+  const processMultiFiles = async (files) => {
     try {
       files.forEach(file => validateImageFile(file));
       
@@ -46,24 +48,62 @@ const OmniGen2Component = ({ formData, onFormDataChange, onConfigOpen }) => {
       }
 
       setInputImages(prev => [...prev, ...newImages].slice(0, 5));
-      e.target.value = '';
     } catch (err) {
       setError(err.message);
     }
   };
 
-  const handleSingleImageUpload = async (e) => {
-    const file = e.target.files[0];
-    
-    if (!file) return;
-
+  const processSingleFile = async (files) => {
     try {
+      const file = files[0];
+      if (!file) return;
+      
       validateImageFile(file);
       const base64 = await fileToBase64(file);
       setEditImage({ file, base64 });
-      e.target.value = '';
     } catch (err) {
       setError(err.message);
+    }
+  };
+
+  const handleMultiImageUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    await processMultiFiles(files);
+    e.target.value = '';
+  };
+
+  const handleSingleImageUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    await processSingleFile(files);
+    e.target.value = '';
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    
+    const files = Array.from(e.dataTransfer.files);
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+    
+    if (imageFiles.length === 0) {
+      setError('Chỉ chấp nhận file ảnh');
+      return;
+    }
+
+    if (mode === 'in-context') {
+      await processMultiFiles(imageFiles);
+    } else {
+      await processSingleFile(imageFiles);
     }
   };
 
@@ -185,29 +225,51 @@ const OmniGen2Component = ({ formData, onFormDataChange, onConfigOpen }) => {
           {mode === 'in-context' ? (
             <div className="form-group">
               <label>Input Images (Tối đa 5)</label>
-              <div className="file-input-wrapper">
+              <div 
+                className={`file-input-wrapper ${isDragOver ? 'drag-over' : ''}`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
                 <label className="file-input">
                   <input
+                    ref={multiFileInputRef}
                     type="file"
                     multiple
                     accept="image/*"
                     onChange={handleMultiImageUpload}
                   />
-                  <span>Chọn nhiều ảnh để tạo composition</span>
+                  <span>
+                    {isDragOver 
+                      ? 'Thả ảnh vào đây' 
+                      : 'Chọn nhiều ảnh hoặc kéo thả để tạo composition'
+                    }
+                  </span>
                 </label>
               </div>
             </div>
           ) : (
             <div className="form-group">
               <label>Image để chỉnh sửa</label>
-              <div className="file-input-wrapper">
+              <div 
+                className={`file-input-wrapper ${isDragOver ? 'drag-over' : ''}`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
                 <label className="file-input">
                   <input
+                    ref={singleFileInputRef}
                     type="file"
                     accept="image/*"
                     onChange={handleSingleImageUpload}
                   />
-                  <span>Chọn ảnh cần chỉnh sửa</span>
+                  <span>
+                    {isDragOver 
+                      ? 'Thả ảnh vào đây' 
+                      : 'Chọn ảnh hoặc kéo thả để chỉnh sửa'
+                    }
+                  </span>
                 </label>
               </div>
             </div>

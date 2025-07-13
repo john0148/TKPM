@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { dreamoGenerate, fileToBase64, validateImageFile } from '../utils/api';
 
 const DreamOComponent = ({ formData, onFormDataChange, onConfigOpen }) => {
@@ -6,6 +6,8 @@ const DreamOComponent = ({ formData, onFormDataChange, onConfigOpen }) => {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const fileInputRef = useRef(null);
 
   const handleInputChange = (e) => {
     const { name, value, type } = e.target;
@@ -15,9 +17,7 @@ const DreamOComponent = ({ formData, onFormDataChange, onConfigOpen }) => {
     }));
   };
 
-  const handleImageUpload = async (e) => {
-    const files = Array.from(e.target.files);
-    
+  const processFiles = async (files) => {
     try {
       // Validate files
       files.forEach(file => validateImageFile(file));
@@ -38,10 +38,40 @@ const DreamOComponent = ({ formData, onFormDataChange, onConfigOpen }) => {
       }
 
       setRefImages(prev => [...prev, ...newImages].slice(0, 10));
-      e.target.value = ''; // Reset input
     } catch (err) {
       setError(err.message);
     }
+  };
+
+  const handleImageUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    await processFiles(files);
+    e.target.value = ''; // Reset input
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    
+    const files = Array.from(e.dataTransfer.files);
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+    
+    if (imageFiles.length === 0) {
+      setError('Chỉ chấp nhận file ảnh');
+      return;
+    }
+
+    await processFiles(imageFiles);
   };
 
   const removeImage = (id) => {
@@ -126,15 +156,26 @@ const DreamOComponent = ({ formData, onFormDataChange, onConfigOpen }) => {
 
           <div className="form-group">
             <label>Reference Images (Tối đa 10)</label>
-            <div className="file-input-wrapper">
+            <div 
+              className={`file-input-wrapper ${isDragOver ? 'drag-over' : ''}`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
               <label className="file-input">
                 <input
+                  ref={fileInputRef}
                   type="file"
                   multiple
                   accept="image/*"
                   onChange={handleImageUpload}
                 />
-                <span>Nhấn để chọn hoặc kéo thả ảnh vào đây</span>
+                <span>
+                  {isDragOver 
+                    ? 'Thả ảnh vào đây' 
+                    : 'Nhấn để chọn hoặc kéo thả ảnh vào đây'
+                  }
+                </span>
               </label>
             </div>
           </div>
