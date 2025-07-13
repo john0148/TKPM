@@ -1,4 +1,4 @@
-* {
+/* * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -360,4 +360,4 @@ body {
   .two-column {
     grid-template-columns: 1fr;
   }
-} 
+}  */

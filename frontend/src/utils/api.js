@@ -1,4 +1,7 @@
-const API_BASE_URL = '/api';
+const API_HOST_URL = 'https://f2bca0cff3dd.ngrok-free.app'; 
+const API_BASE_URL = 'api';
+export const API_URL = `${API_HOST_URL}/${API_BASE_URL}`;
+
 
 // Helper function để convert file thành base64
 export const fileToBase64 = (file) => {
@@ -13,7 +16,8 @@ export const fileToBase64 = (file) => {
 // Helper function để thực hiện API calls
 const apiCall = async (endpoint, options = {}) => {
   try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    console.log(`Calling API: ${API_URL}${endpoint}`, options);
+    const response = await fetch(`${API_URL}${endpoint}`, {
       headers: {
         'Content-Type': 'application/json',
         ...options.headers
