@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { omnigen2InContextGeneration, omnigen2EditImage, fileToBase64, validateImageFile } from '../utils/api';
 
-const OmniGen2Component = ({ formData, onFormDataChange, onConfigOpen }) => {
+const OmniGen2Component = ({ formData, onFormDataChange, onConfigOpen, onImageGenerated }) => {
   const [mode, setMode] = useState('in-context'); // 'in-context' or 'edit'
   const [inputImages, setInputImages] = useState([]);
   const [editImage, setEditImage] = useState(null);
@@ -165,6 +165,11 @@ const OmniGen2Component = ({ formData, onFormDataChange, onConfigOpen }) => {
       }
 
       setResult(response);
+      
+      // Call callback to save image to gallery
+      if (onImageGenerated && response.image) {
+        onImageGenerated(response.image);
+      }
     } catch (err) {
       setError(err.message || 'Có lỗi xảy ra khi xử lý ảnh');
     } finally {

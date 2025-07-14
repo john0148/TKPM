@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { dreamoGenerate, fileToBase64, validateImageFile } from '../utils/api';
 
-const DreamOComponent = ({ formData, onFormDataChange, onConfigOpen }) => {
+const DreamOComponent = ({ formData, onFormDataChange, onConfigOpen, onImageGenerated }) => {
   const [refImages, setRefImages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
@@ -118,6 +118,11 @@ const DreamOComponent = ({ formData, onFormDataChange, onConfigOpen }) => {
       console.log('Sending DreamO request:', requestData);
       const response = await dreamoGenerate(requestData);
       setResult(response);
+      
+      // Call callback to save image to gallery
+      if (onImageGenerated && response.image) {
+        onImageGenerated(response.image);
+      }
     } catch (err) {
       setError(err.message || 'Có lỗi xảy ra khi tạo ảnh');
     } finally {

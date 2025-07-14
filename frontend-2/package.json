@@ -13,9 +13,16 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.1",
+    "cross-env": "^7.0.3",
     "vite": "^5.0.8"
   },
-  "keywords": ["ai", "image-generation", "react", "dreamo", "omnigen2"],
+  "keywords": [
+    "ai",
+    "image-generation",
+    "react",
+    "dreamo",
+    "omnigen2"
+  ],
   "author": "",
   "license": "ISC",
   "description": "Frontend giao diện cho AI Image Generation Backend"

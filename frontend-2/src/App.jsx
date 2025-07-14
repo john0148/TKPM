@@ -5,12 +5,14 @@ import DreamOConfigPopup from './components/DreamOConfigPopup';
 import OmniGen2ConfigPopup from './components/OmniGen2ConfigPopup';
 import TrainingComponent from './components/TrainingComponent';
 import HealthComponent from './components/HealthComponent';
+import ImageGallery from './components/ImageGallery';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dreamo');
   const [healthData, setHealthData] = useState(null);
   const [showConfig, setShowConfig] = useState(false);
   const [configType, setConfigType] = useState(null);
+  const [generatedImages, setGeneratedImages] = useState([]);
   const [dreamoFormData, setDreamoFormData] = useState({
     prompt: '',
     width: 1024,
@@ -64,6 +66,21 @@ function App() {
     }));
   };
 
+  const handleImageGenerated = (imageData, model) => {
+    const newImage = {
+      id: Date.now() + Math.random(),
+      url: imageData,
+      prompt: model === 'dreamo' ? dreamoFormData.prompt : omnigen2FormData.instruction,
+      model: model,
+      timestamp: new Date().toISOString()
+    };
+    setGeneratedImages(prev => [newImage, ...prev]);
+  };
+
+  const handleDeleteImage = (imageId) => {
+    setGeneratedImages(prev => prev.filter(img => img.id !== imageId));
+  };
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'dreamo':
@@ -71,18 +88,21 @@ function App() {
           formData={dreamoFormData}
           onFormDataChange={setDreamoFormData}
           onConfigOpen={() => handleConfigOpen('dreamo')}
+          onImageGenerated={(imageData) => handleImageGenerated(imageData, 'dreamo')}
         />;
       case 'omnigen2':
         return <OmniGen2Component 
           formData={omnigen2FormData}
           onFormDataChange={setOmnigen2FormData}
           onConfigOpen={() => handleConfigOpen('omnigen2')}
+          onImageGenerated={(imageData) => handleImageGenerated(imageData, 'omnigen2')}
         />;
       default:
         return <DreamOComponent 
           formData={dreamoFormData}
           onFormDataChange={setDreamoFormData}
           onConfigOpen={() => handleConfigOpen('dreamo')}
+          onImageGenerated={(imageData) => handleImageGenerated(imageData, 'dreamo')}
         />;
     }
   };
@@ -107,9 +127,18 @@ function App() {
         ))}
       </nav>
 
-      <main className="content">
-        {renderTabContent()}
-      </main>
+      <div className="main-layout">
+        <aside className="gallery-sidebar">
+          <ImageGallery 
+            images={generatedImages}
+            onDeleteImage={handleDeleteImage}
+          />
+        </aside>
+        
+        <main className="content">
+          {renderTabContent()}
+        </main>
+      </div>
 
       {/* Config Popups */}
       {configType === 'dreamo' && (

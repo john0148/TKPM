@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     host: true, // Cho phép truy cập từ ngoài (vd: ngrok)
-    port: 3000,
+    port: 3300,
     allowedHosts: [
       '7fb0e2e4eb50.ngrok-free.app' // Thêm domain ngrok của bạn vào đây
     ],
