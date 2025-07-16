@@ -111,7 +111,6 @@ function App() {
     <div className={`app ${showConfig ? 'config-active' : ''}`}>
       <header className="header">
         <h1>🎨 AI Image Generation</h1>
-        <p>Giao diện thống nhất cho DreamO và OmniGen2</p>
       </header>
 
       <nav className="nav">

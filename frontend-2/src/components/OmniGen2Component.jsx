@@ -180,7 +180,7 @@ const OmniGen2Component = ({ formData, onFormDataChange, onConfigOpen, onImageGe
   return (
     <div className="section">
       <div className="section-header">
-        <h2>🤖 OmniGen2 - Advanced AI Image Generation & Editing</h2>
+        <h2>🎨 Multiple human generation & editing</h2>
         <button 
           className="config-button"
           onClick={onConfigOpen}

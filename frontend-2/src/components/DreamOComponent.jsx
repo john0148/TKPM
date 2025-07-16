@@ -133,7 +133,7 @@ const DreamOComponent = ({ formData, onFormDataChange, onConfigOpen, onImageGene
   return (
     <div className="section">
       <div className="section-header">
-        <h2>🎨 DreamO - Image Generation với Reference Images</h2>
+        <h2>🎨 Human with multiple objects generation</h2>
         <button 
           className="config-button"
           onClick={onConfigOpen}
