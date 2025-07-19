@@ -1,5 +1,5 @@
 compute_environment: LOCAL_MACHINE
-distributed_type: NO
+distributed_type: FSDP
 downcast_bf16: 'no'
 gpu_ids: '0,1'
 machine_rank: 0
@@ -8,10 +8,22 @@ main_process_port: 29500
 main_training_function: main
 mixed_precision: bf16
 num_machines: 1
-num_processes: 1
+num_processes: 2
 rdzv_backend: static
 same_network: true
 tpu_env: []
 tpu_use_cluster: false
 tpu_use_sudo: false
-use_cpu: false 
+use_cpu: false
+fsdp_config:
+  fsdp_auto_wrap_policy: "TRANSFORMER_BASED_WRAP"
+  fsdp_backward_prefetch: "BACKWARD_POST"  # More memory-efficient than BACKWARD_PRE
+  fsdp_offload_params: true  # Enable parameter offloading to CPU
+  fsdp_sharding_strategy: "HYBRID_SHARD_ZERO2"  # More conservative sharding than FULL_SHARD
+  fsdp_state_dict_type: "FULL_STATE_DICT"
+  fsdp_transformer_layer_cls_to_wrap: "OmniGen2TransformerBlock"
+  fsdp_use_orig_params: true
+  fsdp_forward_prefetch: false
+  fsdp_cpu_ram_efficient_loading: true  # Enable CPU RAM efficient loading
+  fsdp_sync_module_states: true  # Ensure proper synchronization
+  fsdp_limit_all_gathers: true  # Reduce memory spikes during all-gather operations 

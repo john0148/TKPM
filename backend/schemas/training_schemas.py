@@ -7,6 +7,8 @@ class TrainingRequest(BaseModel):
     name_object: str = Field(..., description="Tên trigger word cho object cần train")
     description: Optional[str] = Field(None, description="Mô tả chi tiết về object")
     
+    model_config = {"protected_namespaces": ()}
+    
 class TrainingResponse(BaseModel):
     """Response schema cho training pipeline"""
     success: bool
@@ -15,6 +17,8 @@ class TrainingResponse(BaseModel):
     model_path: Optional[str] = None
     generated_image_path: Optional[str] = None
     variations_count: Optional[int] = None
+    
+    model_config = {"protected_namespaces": ()}
 
 class TrainingStatus(BaseModel):
     """Schema cho status của training process"""
@@ -23,6 +27,8 @@ class TrainingStatus(BaseModel):
     progress: float  # 0.0 to 1.0
     message: str
     generated_image_path: Optional[str] = None
+    
+    model_config = {"protected_namespaces": ()}
 
 class InferenceRequest(BaseModel):
     """Request schema cho inference với trained model"""
@@ -30,4 +36,6 @@ class InferenceRequest(BaseModel):
     prompt: str = Field(..., description="Prompt để generate image")
     negative_prompt: Optional[str] = None
     num_inference_steps: int = 28
-    guidance_scale: float = 4.0 
+    guidance_scale: float = 4.0
+    
+    model_config = {"protected_namespaces": ()} 

@@ -35,8 +35,9 @@ class OmniGen2InContextRequest(BaseModel):
             raise ValueError('cfg_range_end must be greater than or equal to cfg_range_start')
         return v
     
-    class Config:
-        schema_extra = {
+    model_config = {
+        "protected_namespaces": (),
+        "json_schema_extra": {
             "example": {
                 "instruction": "Please let the person in image 2 hold the toy from the first image in a parking lot.",
                 "input_images": [
@@ -51,6 +52,7 @@ class OmniGen2InContextRequest(BaseModel):
                 "seed": 0
             }
         }
+    }
 
 class OmniGen2EditRequest(BaseModel):
     """Request schema for OmniGen2 image editing"""
@@ -76,8 +78,9 @@ class OmniGen2EditRequest(BaseModel):
             raise ValueError('cfg_range_end must be greater than or equal to cfg_range_start')
         return v
     
-    class Config:
-        schema_extra = {
+    model_config = {
+        "protected_namespaces": (),
+        "json_schema_extra": {
             "example": {
                 "instruction": "Change the background to classroom",
                 "input_image": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQ...",
@@ -89,6 +92,7 @@ class OmniGen2EditRequest(BaseModel):
                 "seed": 0
             }
         }
+    }
 
 class OmniGen2Response(BaseModel):
     """Response schema for OmniGen2 operations"""
@@ -101,8 +105,9 @@ class OmniGen2Response(BaseModel):
     error: Optional[str] = Field(None, description="Error message if operation failed")
     generation_time: Optional[float] = Field(None, description="Time taken for generation in seconds")
     
-    class Config:
-        schema_extra = {
+    model_config = {
+        "protected_namespaces": (),
+        "json_schema_extra": {
             "example": {
                 "success": True,
                 "image": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...",
@@ -112,6 +117,7 @@ class OmniGen2Response(BaseModel):
                 "generation_time": 25.8
             }
         }
+    }
 
 class OmniGen2HealthResponse(BaseModel):
     """Response schema for OmniGen2 health check"""
@@ -120,12 +126,14 @@ class OmniGen2HealthResponse(BaseModel):
     device: str = Field(..., description="Device being used")
     memory_usage: Optional[str] = Field(None, description="Current memory usage")
     
-    class Config:
-        schema_extra = {
+    model_config = {
+        "protected_namespaces": (),
+        "json_schema_extra": {
             "example": {
                 "healthy": True,
                 "model_loaded": True,
                 "device": "cuda",
                 "memory_usage": "14.3GB / 24GB"
             }
-        } 
+        }
+    } 

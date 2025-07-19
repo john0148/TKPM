@@ -1,7 +1,3 @@
-"""
-FastAPI routes for DreamO image generation
-"""
-
 import logging
 from typing import List
 from fastapi import APIRouter, HTTPException, Depends
@@ -11,11 +7,10 @@ import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-from schemas.dreamo_schemas import (
-    DreamOGenerateRequest, 
-    DreamOGenerateResponse, 
-    DreamOHealthResponse
-)
+# --- THAY ĐỔI: Import app_state ---
+import app_state
+from models.dreamo_model import DreamOModel
+from schemas.dreamo_schemas import DreamOGenerateRequest, DreamOGenerateResponse, DreamOHealthResponse
 from utils.image_utils import (
     decode_base64_list_to_images,
     encode_image_list_to_base64,
@@ -26,15 +21,23 @@ from utils.image_utils import (
 )
 
 logger = logging.getLogger(__name__)
-
 router = APIRouter()
 
 def get_dreamo_model():
-    """Dependency to get DreamO model instance"""
-    import main
-    if main.dreamo_model is None:
-        raise HTTPException(status_code=503, detail="DreamO model not loaded")
-    return main.dreamo_model
+    """
+    Dependency to get DreamO model instance.
+    Reloads the model on demand if it was unloaded for training.
+    """
+    if app_state.dreamo_model is None:
+        logger.warning("DreamO model not found, reloading on demand...")
+        try:
+            app_state.dreamo_model = DreamOModel()
+            logger.info("✅ DreamO model reloaded successfully on cuda:0.")
+        except Exception as e:
+            logger.error(f"❌ Failed to reload DreamO model: {e}", exc_info=True)
+            raise HTTPException(status_code=503, detail=f"Failed to reload DreamO model: {e}")
+    return app_state.dreamo_model
+
 
 @router.post("/generate", response_model=DreamOGenerateResponse)
 async def generate_image(
@@ -154,32 +157,24 @@ async def generate_image(
             )
 
 @router.get("/health", response_model=DreamOHealthResponse)
-async def health_check(model = Depends(get_dreamo_model)):
-    """
-    Check DreamO model health status
-    
-    Returns information about model status, version, and device.
-    """
+async def health_check():
+    model = app_state.dreamo_model
     try:
+        if model is None:
+            return DreamOHealthResponse(
+                healthy=False, model_loaded=False, version="v1.1", device="unloaded"
+            )
+
         is_healthy = model.health_check()
-        
-        # Get device info
         device = model.get_device_info()
         
         return DreamOHealthResponse(
-            healthy=is_healthy,
-            model_loaded=model is not None,
-            version="v1.1",  # DreamO version
-            device=device
+            healthy=is_healthy, model_loaded=True, version="v.1.1", device=device
         )
-        
     except Exception as e:
         logger.error(f"Health check error: {e}")
         return DreamOHealthResponse(
-            healthy=False,
-            model_loaded=False,
-            version="unknown",
-            device="unknown"
+            healthy=False, model_loaded=False, version="unknown", device="unknown"
         )
 
 @router.get("/examples")

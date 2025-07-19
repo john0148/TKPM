@@ -33,10 +33,10 @@ router = APIRouter()
 
 def get_omnigen2_model():
     """Dependency to get OmniGen2 model instance"""
-    import main
-    if main.omnigen2_model is None:
+    import app_state
+    if app_state.omnigen2_model is None:
         raise HTTPException(status_code=503, detail="OmniGen2 model not loaded")
-    return main.omnigen2_model
+    return app_state.omnigen2_model
 
 @router.post("/in-context-generation", response_model=OmniGen2Response)
 async def generate_in_context(

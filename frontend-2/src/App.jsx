@@ -37,7 +37,8 @@ function App() {
 
   const tabs = [
     { id: 'dreamo', label: 'Stage 1', desc: 'Gen human with mull object' },
-    { id: 'omnigen2', label: 'Stage 2', desc: 'Gen multihuman in the image' }
+    { id: 'omnigen2', label: 'Stage 2', desc: 'Gen multihuman in the image' },
+    { id: 'training', label: 'Training', desc: 'Train LoRA for custom object/background' }
   ];
 
   const handleConfigOpen = (type) => {
@@ -97,6 +98,8 @@ function App() {
           onConfigOpen={() => handleConfigOpen('omnigen2')}
           onImageGenerated={(imageData) => handleImageGenerated(imageData, 'omnigen2')}
         />;
+      case 'training':
+        return <TrainingComponent />;
       default:
         return <DreamOComponent 
           formData={dreamoFormData}

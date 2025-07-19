@@ -12,7 +12,8 @@ const TrainingComponent = () => {
   const [mode, setMode] = useState('new'); // 'new', 'manage', 'inference'
   const [formData, setFormData] = useState({
     nameObject: '',
-    description: ''
+    description: '',
+    subjectType: 'object' // mặc định là object
   });
   const [referenceImages, setReferenceImages] = useState([]);
   const [trainingSessions, setTrainingSessions] = useState([]);
@@ -110,7 +111,7 @@ const TrainingComponent = () => {
 
     try {
       const files = referenceImages.map(img => img.file);
-      const response = await startTraining(formData.nameObject, formData.description, files);
+      const response = await startTraining(formData.nameObject, formData.description, files, formData.subjectType);
       
       setSuccess('Training pipeline đã bắt đầu!');
       setCurrentTraining({
@@ -254,6 +255,32 @@ const TrainingComponent = () => {
                 onChange={handleInputChange}
                 placeholder="VD: my_cat, john_person, special_toy..."
               />
+            </div>
+
+            <div className="form-group subject-type-group">
+              <label className="subject-type-label">Loại chủ thể *</label>
+              <div className="subject-type-btn-group">
+                <label className={`subject-type-btn${formData.subjectType === 'object' ? ' active' : ''}`}> 
+                  <input
+                    type="radio"
+                    name="subjectType"
+                    value="object"
+                    checked={formData.subjectType === 'object'}
+                    onChange={() => setFormData(prev => ({ ...prev, subjectType: 'object' }))}
+                  />
+                  Object
+                </label>
+                <label className={`subject-type-btn${formData.subjectType === 'background' ? ' active' : ''}`}> 
+                  <input
+                    type="radio"
+                    name="subjectType"
+                    value="background"
+                    checked={formData.subjectType === 'background'}
+                    onChange={() => setFormData(prev => ({ ...prev, subjectType: 'background' }))}
+                  />
+                  Background
+                </label>
+              </div>
             </div>
 
             <div className="form-group">

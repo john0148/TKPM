@@ -17,13 +17,15 @@ class ReferenceImage(BaseModel):
     image_data: str = Field(..., description="Base64 encoded image data")
     task: TaskType = Field(..., description="Task type for this reference image")
     
-    class Config:
-        schema_extra = {
+    model_config = {
+        "protected_namespaces": (),
+        "json_schema_extra": {
             "example": {
                 "image_data": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQ...",
                 "task": "ip"
             }
         }
+    }
 
 class DreamOGenerateRequest(BaseModel):
     """Request schema for DreamO image generation"""
@@ -48,8 +50,9 @@ class DreamOGenerateRequest(BaseModel):
             raise ValueError('cfg_end_step must be greater than cfg_start_step when both are non-zero')
         return v
     
-    class Config:
-        schema_extra = {
+    model_config = {
+        "protected_namespaces": (),
+        "json_schema_extra": {
             "example": {
                 "prompt": "a person playing guitar in the street",
                 "ref_images": [
@@ -65,6 +68,7 @@ class DreamOGenerateRequest(BaseModel):
                 "seed": -1
             }
         }
+    }
 
 class DreamOGenerateResponse(BaseModel):
     """Response schema for DreamO image generation"""
@@ -77,8 +81,9 @@ class DreamOGenerateResponse(BaseModel):
     error: Optional[str] = Field(None, description="Error message if generation failed")
     generation_time: Optional[float] = Field(None, description="Time taken for generation in seconds")
     
-    class Config:
-        schema_extra = {
+    model_config = {
+        "protected_namespaces": (),
+        "json_schema_extra": {
             "example": {
                 "success": True,
                 "image": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...",
@@ -89,6 +94,7 @@ class DreamOGenerateResponse(BaseModel):
                 "generation_time": 15.2
             }
         }
+    }
 
 class DreamOHealthResponse(BaseModel):
     """Response schema for DreamO health check"""
@@ -97,12 +103,14 @@ class DreamOHealthResponse(BaseModel):
     version: str = Field(..., description="DreamO version")
     device: str = Field(..., description="Device being used")
     
-    class Config:
-        schema_extra = {
+    model_config = {
+        "protected_namespaces": (),
+        "json_schema_extra": {
             "example": {
                 "healthy": True,
                 "model_loaded": True,
                 "version": "v1.1",
                 "device": "cuda"
             }
-        } 
+        }
+    } 

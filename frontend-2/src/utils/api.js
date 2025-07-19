@@ -116,17 +116,18 @@ export const getOmnigen2ModelInfo = async () => {
 // TRAINING APIs
 // =================
 
-export const startTraining = async (nameObject, description, referenceImages) => {
+export const startTraining = async (nameObject, description, referenceImages, subjectType) => {
   const formData = new FormData();
   formData.append('name_object', nameObject);
   if (description) {
     formData.append('description', description);
   }
-  
+  if (subjectType) {
+    formData.append('subject_type', subjectType);
+  }
   referenceImages.forEach((file, index) => {
     formData.append('reference_images', file);
   });
-
   return apiFormCall('/training/start', formData);
 };
 

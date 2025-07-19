@@ -1,0 +1,613 @@
+2025-07-19 17:37:10,160 - INFO - __main__ - --- text_encoder ---
+2025-07-19 17:37:10,160 - INFO - __main__ - Qwen2_5_VLModel(
+  (embed_tokens): Embedding(151936, 2048)
+  (layers): ModuleList(
+    (0-35): 36 x Qwen2_5_VLDecoderLayer(
+      (self_attn): Qwen2_5_VLSdpaAttention(
+        (q_proj): Linear(in_features=2048, out_features=2048, bias=True)
+        (k_proj): Linear(in_features=2048, out_features=256, bias=True)
+        (v_proj): Linear(in_features=2048, out_features=256, bias=True)
+        (o_proj): Linear(in_features=2048, out_features=2048, bias=False)
+        (rotary_emb): Qwen2_5_VLRotaryEmbedding()
+      )
+      (mlp): Qwen2MLP(
+        (gate_proj): Linear(in_features=2048, out_features=11008, bias=False)
+        (up_proj): Linear(in_features=2048, out_features=11008, bias=False)
+        (down_proj): Linear(in_features=11008, out_features=2048, bias=False)
+        (act_fn): SiLU()
+      )
+      (input_layernorm): Qwen2RMSNorm((2048,), eps=1e-06)
+      (post_attention_layernorm): Qwen2RMSNorm((2048,), eps=1e-06)
+    )
+  )
+  (norm): Qwen2RMSNorm((2048,), eps=1e-06)
+  (rotary_emb): Qwen2_5_VLRotaryEmbedding()
+)
+2025-07-19 17:37:10,163 - INFO - __main__ - Total parameters (M): 3085.94
+2025-07-19 17:37:10,163 - INFO - __main__ - Trainable parameters (M): 3085.94
+2025-07-19 17:37:10,867 - INFO - __main__ - AutoencoderKL(
+  (encoder): Encoder(
+    (conv_in): Conv2d(3, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (down_blocks): ModuleList(
+      (0): DownEncoderBlock2D(
+        (resnets): ModuleList(
+          (0-1): 2 x ResnetBlock2D(
+            (norm1): GroupNorm(32, 128, eps=1e-06, affine=True)
+            (conv1): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+            (norm2): GroupNorm(32, 128, eps=1e-06, affine=True)
+            (dropout): Dropout(p=0.0, inplace=False)
+            (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+            (nonlinearity): SiLU()
+          )
+        )
+        (downsamplers): ModuleList(
+          (0): Downsample2D(
+            (conv): Conv2d(128, 128, kernel_size=(3, 3), stride=(2, 2))
+          )
+        )
+      )
+      (1): DownEncoderBlock2D(
+        (resnets): ModuleList(
+          (0): ResnetBlock2D(
+            (norm1): GroupNorm(32, 128, eps=1e-06, affine=True)
+            (conv1): Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+            (norm2): GroupNorm(32, 256, eps=1e-06, affine=True)
+            (dropout): Dropout(p=0.0, inplace=False)
+            (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+            (nonlinearity): SiLU()
+            (conv_shortcut): Conv2d(128, 256, kernel_size=(1, 1), stride=(1, 1))
+          )
+          (1): ResnetBlock2D(
+            (norm1): GroupNorm(32, 256, eps=1e-06, affine=True)
+            (conv1): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+            (norm2): GroupNorm(32, 256, eps=1e-06, affine=True)
+            (dropout): Dropout(p=0.0, inplace=False)
+            (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+            (nonlinearity): SiLU()
+          )
+        )
+        (downsamplers): ModuleList(
+          (0): Downsample2D(
+            (conv): Conv2d(256, 256, kernel_size=(3, 3), stride=(2, 2))
+          )
+        )
+      )
+      (2): DownEncoderBlock2D(
+        (resnets): ModuleList(
+          (0): ResnetBlock2D(
+            (norm1): GroupNorm(32, 256, eps=1e-06, affine=True)
+            (conv1): Conv2d(256, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+            (norm2): GroupNorm(32, 512, eps=1e-06, affine=True)
+            (dropout): Dropout(p=0.0, inplace=False)
+            (conv2): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+            (nonlinearity): SiLU()
+            (conv_shortcut): Conv2d(256, 512, kernel_size=(1, 1), stride=(1, 1))
+          )
+          (1): ResnetBlock2D(
+            (norm1): GroupNorm(32, 512, eps=1e-06, affine=True)
+            (conv1): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+            (norm2): GroupNorm(32, 512, eps=1e-06, affine=True)
+            (dropout): Dropout(p=0.0, inplace=False)
+            (conv2): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+            (nonlinearity): SiLU()
+          )
+        )
+        (downsamplers): ModuleList(
+          (0): Downsample2D(
+            (conv): Conv2d(512, 512, kernel_size=(3, 3), stride=(2, 2))
+          )
+        )
+      )
+      (3): DownEncoderBlock2D(
+        (resnets): ModuleList(
+          (0-1): 2 x ResnetBlock2D(
+            (norm1): GroupNorm(32, 512, eps=1e-06, affine=True)
+            (conv1): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+            (norm2): GroupNorm(32, 512, eps=1e-06, affine=True)
+            (dropout): Dropout(p=0.0, inplace=False)
+            (conv2): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+            (nonlinearity): SiLU()
+          )
+        )
+      )
+    )
+    (mid_block): UNetMidBlock2D(
+      (attentions): ModuleList(
+        (0): Attention(
+          (group_norm): GroupNorm(32, 512, eps=1e-06, affine=True)
+          (to_q): Linear(in_features=512, out_features=512, bias=True)
+          (to_k): Linear(in_features=512, out_features=512, bias=True)
+          (to_v): Linear(in_features=512, out_features=512, bias=True)
+          (to_out): ModuleList(
+            (0): Linear(in_features=512, out_features=512, bias=True)
+            (1): Dropout(p=0.0, inplace=False)
+          )
+        )
+      )
+      (resnets): ModuleList(
+        (0-1): 2 x ResnetBlock2D(
+          (norm1): GroupNorm(32, 512, eps=1e-06, affine=True)
+          (conv1): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+          (norm2): GroupNorm(32, 512, eps=1e-06, affine=True)
+          (dropout): Dropout(p=0.0, inplace=False)
+          (conv2): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+          (nonlinearity): SiLU()
+        )
+      )
+    )
+    (conv_norm_out): GroupNorm(32, 512, eps=1e-06, affine=True)
+    (conv_act): SiLU()
+    (conv_out): Conv2d(512, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+  )
+  (decoder): Decoder(
+    (conv_in): Conv2d(16, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (up_blocks): ModuleList(
+      (0-1): 2 x UpDecoderBlock2D(
+        (resnets): ModuleList(
+          (0-2): 3 x ResnetBlock2D(
+            (norm1): GroupNorm(32, 512, eps=1e-06, affine=True)
+            (conv1): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+            (norm2): GroupNorm(32, 512, eps=1e-06, affine=True)
+            (dropout): Dropout(p=0.0, inplace=False)
+            (conv2): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+            (nonlinearity): SiLU()
+          )
+        )
+        (upsamplers): ModuleList(
+          (0): Upsample2D(
+            (conv): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+          )
+        )
+      )
+      (2): UpDecoderBlock2D(
+        (resnets): ModuleList(
+          (0): ResnetBlock2D(
+            (norm1): GroupNorm(32, 512, eps=1e-06, affine=True)
+            (conv1): Conv2d(512, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+            (norm2): GroupNorm(32, 256, eps=1e-06, affine=True)
+            (dropout): Dropout(p=0.0, inplace=False)
+            (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+            (nonlinearity): SiLU()
+            (conv_shortcut): Conv2d(512, 256, kernel_size=(1, 1), stride=(1, 1))
+          )
+          (1-2): 2 x ResnetBlock2D(
+            (norm1): GroupNorm(32, 256, eps=1e-06, affine=True)
+            (conv1): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+            (norm2): GroupNorm(32, 256, eps=1e-06, affine=True)
+            (dropout): Dropout(p=0.0, inplace=False)
+            (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+            (nonlinearity): SiLU()
+          )
+        )
+        (upsamplers): ModuleList(
+          (0): Upsample2D(
+            (conv): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+          )
+        )
+      )
+      (3): UpDecoderBlock2D(
+        (resnets): ModuleList(
+          (0): ResnetBlock2D(
+            (norm1): GroupNorm(32, 256, eps=1e-06, affine=True)
+            (conv1): Conv2d(256, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+            (norm2): GroupNorm(32, 128, eps=1e-06, affine=True)
+            (dropout): Dropout(p=0.0, inplace=False)
+            (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+            (nonlinearity): SiLU()
+            (conv_shortcut): Conv2d(256, 128, kernel_size=(1, 1), stride=(1, 1))
+          )
+          (1-2): 2 x ResnetBlock2D(
+            (norm1): GroupNorm(32, 128, eps=1e-06, affine=True)
+            (conv1): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+            (norm2): GroupNorm(32, 128, eps=1e-06, affine=True)
+            (dropout): Dropout(p=0.0, inplace=False)
+            (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+            (nonlinearity): SiLU()
+          )
+        )
+      )
+    )
+    (mid_block): UNetMidBlock2D(
+      (attentions): ModuleList(
+        (0): Attention(
+          (group_norm): GroupNorm(32, 512, eps=1e-06, affine=True)
+          (to_q): Linear(in_features=512, out_features=512, bias=True)
+          (to_k): Linear(in_features=512, out_features=512, bias=True)
+          (to_v): Linear(in_features=512, out_features=512, bias=True)
+          (to_out): ModuleList(
+            (0): Linear(in_features=512, out_features=512, bias=True)
+            (1): Dropout(p=0.0, inplace=False)
+          )
+        )
+      )
+      (resnets): ModuleList(
+        (0-1): 2 x ResnetBlock2D(
+          (norm1): GroupNorm(32, 512, eps=1e-06, affine=True)
+          (conv1): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+          (norm2): GroupNorm(32, 512, eps=1e-06, affine=True)
+          (dropout): Dropout(p=0.0, inplace=False)
+          (conv2): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+          (nonlinearity): SiLU()
+        )
+      )
+    )
+    (conv_norm_out): GroupNorm(32, 128, eps=1e-06, affine=True)
+    (conv_act): SiLU()
+    (conv_out): Conv2d(128, 3, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+  )
+)
+2025-07-19 17:37:10,869 - INFO - __main__ - ***** Move vae, text_encoder to device and cast to weight_dtype *****
+2025-07-19 17:37:12,603 - INFO - __main__ - --- transformer ---
+2025-07-19 17:37:12,603 - INFO - __main__ - OmniGen2Transformer2DModel(
+  (rope_embedder): OmniGen2RotaryPosEmbed()
+  (x_embedder): Linear(in_features=64, out_features=2520, bias=True)
+  (ref_image_patch_embedder): Linear(in_features=64, out_features=2520, bias=True)
+  (time_caption_embed): Lumina2CombinedTimestepCaptionEmbedding(
+    (time_proj): Timesteps()
+    (timestep_embedder): TimestepEmbedding(
+      (linear_1): Linear(in_features=256, out_features=1024, bias=True)
+      (act): SiLU()
+      (linear_2): Linear(in_features=1024, out_features=1024, bias=True)
+    )
+    (caption_embedder): Sequential(
+      (0): RMSNorm()
+      (1): Linear(in_features=2048, out_features=2520, bias=True)
+    )
+  )
+  (noise_refiner): ModuleList(
+    (0-1): 2 x OmniGen2TransformerBlock(
+      (attn): Attention(
+        (norm_q): RMSNorm()
+        (norm_k): RMSNorm()
+        (to_q): lora.Linear(
+          (base_layer): Linear(in_features=2520, out_features=2520, bias=False)
+          (lora_dropout): ModuleDict(
+            (default): Identity()
+          )
+          (lora_A): ModuleDict(
+            (default): Linear(in_features=2520, out_features=8, bias=False)
+          )
+          (lora_B): ModuleDict(
+            (default): Linear(in_features=8, out_features=2520, bias=False)
+          )
+          (lora_embedding_A): ParameterDict()
+          (lora_embedding_B): ParameterDict()
+          (lora_magnitude_vector): ModuleDict()
+        )
+        (to_k): lora.Linear(
+          (base_layer): Linear(in_features=2520, out_features=840, bias=False)
+          (lora_dropout): ModuleDict(
+            (default): Identity()
+          )
+          (lora_A): ModuleDict(
+            (default): Linear(in_features=2520, out_features=8, bias=False)
+          )
+          (lora_B): ModuleDict(
+            (default): Linear(in_features=8, out_features=840, bias=False)
+          )
+          (lora_embedding_A): ParameterDict()
+          (lora_embedding_B): ParameterDict()
+          (lora_magnitude_vector): ModuleDict()
+        )
+        (to_v): lora.Linear(
+          (base_layer): Linear(in_features=2520, out_features=840, bias=False)
+          (lora_dropout): ModuleDict(
+            (default): Identity()
+          )
+          (lora_A): ModuleDict(
+            (default): Linear(in_features=2520, out_features=8, bias=False)
+          )
+          (lora_B): ModuleDict(
+            (default): Linear(in_features=8, out_features=840, bias=False)
+          )
+          (lora_embedding_A): ParameterDict()
+          (lora_embedding_B): ParameterDict()
+          (lora_magnitude_vector): ModuleDict()
+        )
+        (to_out): ModuleList(
+          (0): lora.Linear(
+            (base_layer): Linear(in_features=2520, out_features=2520, bias=False)
+            (lora_dropout): ModuleDict(
+              (default): Identity()
+            )
+            (lora_A): ModuleDict(
+              (default): Linear(in_features=2520, out_features=8, bias=False)
+            )
+            (lora_B): ModuleDict(
+              (default): Linear(in_features=8, out_features=2520, bias=False)
+            )
+            (lora_embedding_A): ParameterDict()
+            (lora_embedding_B): ParameterDict()
+            (lora_magnitude_vector): ModuleDict()
+          )
+          (1): Dropout(p=0.0, inplace=False)
+        )
+      )
+      (feed_forward): LuminaFeedForward(
+        (linear_1): Linear(in_features=2520, out_features=10240, bias=False)
+        (linear_2): Linear(in_features=10240, out_features=2520, bias=False)
+        (linear_3): Linear(in_features=2520, out_features=10240, bias=False)
+      )
+      (norm1): LuminaRMSNormZero(
+        (silu): SiLU()
+        (linear): Linear(in_features=1024, out_features=10080, bias=True)
+        (norm): RMSNorm()
+      )
+      (ffn_norm1): RMSNorm()
+      (norm2): RMSNorm()
+      (ffn_norm2): RMSNorm()
+    )
+  )
+  (ref_image_refiner): ModuleList(
+    (0-1): 2 x OmniGen2TransformerBlock(
+      (attn): Attention(
+        (norm_q): RMSNorm()
+        (norm_k): RMSNorm()
+        (to_q): lora.Linear(
+          (base_layer): Linear(in_features=2520, out_features=2520, bias=False)
+          (lora_dropout): ModuleDict(
+            (default): Identity()
+          )
+          (lora_A): ModuleDict(
+            (default): Linear(in_features=2520, out_features=8, bias=False)
+          )
+          (lora_B): ModuleDict(
+            (default): Linear(in_features=8, out_features=2520, bias=False)
+          )
+          (lora_embedding_A): ParameterDict()
+          (lora_embedding_B): ParameterDict()
+          (lora_magnitude_vector): ModuleDict()
+        )
+        (to_k): lora.Linear(
+          (base_layer): Linear(in_features=2520, out_features=840, bias=False)
+          (lora_dropout): ModuleDict(
+            (default): Identity()
+          )
+          (lora_A): ModuleDict(
+            (default): Linear(in_features=2520, out_features=8, bias=False)
+          )
+          (lora_B): ModuleDict(
+            (default): Linear(in_features=8, out_features=840, bias=False)
+          )
+          (lora_embedding_A): ParameterDict()
+          (lora_embedding_B): ParameterDict()
+          (lora_magnitude_vector): ModuleDict()
+        )
+        (to_v): lora.Linear(
+          (base_layer): Linear(in_features=2520, out_features=840, bias=False)
+          (lora_dropout): ModuleDict(
+            (default): Identity()
+          )
+          (lora_A): ModuleDict(
+            (default): Linear(in_features=2520, out_features=8, bias=False)
+          )
+          (lora_B): ModuleDict(
+            (default): Linear(in_features=8, out_features=840, bias=False)
+          )
+          (lora_embedding_A): ParameterDict()
+          (lora_embedding_B): ParameterDict()
+          (lora_magnitude_vector): ModuleDict()
+        )
+        (to_out): ModuleList(
+          (0): lora.Linear(
+            (base_layer): Linear(in_features=2520, out_features=2520, bias=False)
+            (lora_dropout): ModuleDict(
+              (default): Identity()
+            )
+            (lora_A): ModuleDict(
+              (default): Linear(in_features=2520, out_features=8, bias=False)
+            )
+            (lora_B): ModuleDict(
+              (default): Linear(in_features=8, out_features=2520, bias=False)
+            )
+            (lora_embedding_A): ParameterDict()
+            (lora_embedding_B): ParameterDict()
+            (lora_magnitude_vector): ModuleDict()
+          )
+          (1): Dropout(p=0.0, inplace=False)
+        )
+      )
+      (feed_forward): LuminaFeedForward(
+        (linear_1): Linear(in_features=2520, out_features=10240, bias=False)
+        (linear_2): Linear(in_features=10240, out_features=2520, bias=False)
+        (linear_3): Linear(in_features=2520, out_features=10240, bias=False)
+      )
+      (norm1): LuminaRMSNormZero(
+        (silu): SiLU()
+        (linear): Linear(in_features=1024, out_features=10080, bias=True)
+        (norm): RMSNorm()
+      )
+      (ffn_norm1): RMSNorm()
+      (norm2): RMSNorm()
+      (ffn_norm2): RMSNorm()
+    )
+  )
+  (context_refiner): ModuleList(
+    (0-1): 2 x OmniGen2TransformerBlock(
+      (attn): Attention(
+        (norm_q): RMSNorm()
+        (norm_k): RMSNorm()
+        (to_q): lora.Linear(
+          (base_layer): Linear(in_features=2520, out_features=2520, bias=False)
+          (lora_dropout): ModuleDict(
+            (default): Identity()
+          )
+          (lora_A): ModuleDict(
+            (default): Linear(in_features=2520, out_features=8, bias=False)
+          )
+          (lora_B): ModuleDict(
+            (default): Linear(in_features=8, out_features=2520, bias=False)
+          )
+          (lora_embedding_A): ParameterDict()
+          (lora_embedding_B): ParameterDict()
+          (lora_magnitude_vector): ModuleDict()
+        )
+        (to_k): lora.Linear(
+          (base_layer): Linear(in_features=2520, out_features=840, bias=False)
+          (lora_dropout): ModuleDict(
+            (default): Identity()
+          )
+          (lora_A): ModuleDict(
+            (default): Linear(in_features=2520, out_features=8, bias=False)
+          )
+          (lora_B): ModuleDict(
+            (default): Linear(in_features=8, out_features=840, bias=False)
+          )
+          (lora_embedding_A): ParameterDict()
+          (lora_embedding_B): ParameterDict()
+          (lora_magnitude_vector): ModuleDict()
+        )
+        (to_v): lora.Linear(
+          (base_layer): Linear(in_features=2520, out_features=840, bias=False)
+          (lora_dropout): ModuleDict(
+            (default): Identity()
+          )
+          (lora_A): ModuleDict(
+            (default): Linear(in_features=2520, out_features=8, bias=False)
+          )
+          (lora_B): ModuleDict(
+            (default): Linear(in_features=8, out_features=840, bias=False)
+          )
+          (lora_embedding_A): ParameterDict()
+          (lora_embedding_B): ParameterDict()
+          (lora_magnitude_vector): ModuleDict()
+        )
+        (to_out): ModuleList(
+          (0): lora.Linear(
+            (base_layer): Linear(in_features=2520, out_features=2520, bias=False)
+            (lora_dropout): ModuleDict(
+              (default): Identity()
+            )
+            (lora_A): ModuleDict(
+              (default): Linear(in_features=2520, out_features=8, bias=False)
+            )
+            (lora_B): ModuleDict(
+              (default): Linear(in_features=8, out_features=2520, bias=False)
+            )
+            (lora_embedding_A): ParameterDict()
+            (lora_embedding_B): ParameterDict()
+            (lora_magnitude_vector): ModuleDict()
+          )
+          (1): Dropout(p=0.0, inplace=False)
+        )
+      )
+      (feed_forward): LuminaFeedForward(
+        (linear_1): Linear(in_features=2520, out_features=10240, bias=False)
+        (linear_2): Linear(in_features=10240, out_features=2520, bias=False)
+        (linear_3): Linear(in_features=2520, out_features=10240, bias=False)
+      )
+      (norm1): RMSNorm()
+      (ffn_norm1): RMSNorm()
+      (norm2): RMSNorm()
+      (ffn_norm2): RMSNorm()
+    )
+  )
+  (layers): ModuleList(
+    (0-31): 32 x OmniGen2TransformerBlock(
+      (attn): Attention(
+        (norm_q): RMSNorm()
+        (norm_k): RMSNorm()
+        (to_q): lora.Linear(
+          (base_layer): Linear(in_features=2520, out_features=2520, bias=False)
+          (lora_dropout): ModuleDict(
+            (default): Identity()
+          )
+          (lora_A): ModuleDict(
+            (default): Linear(in_features=2520, out_features=8, bias=False)
+          )
+          (lora_B): ModuleDict(
+            (default): Linear(in_features=8, out_features=2520, bias=False)
+          )
+          (lora_embedding_A): ParameterDict()
+          (lora_embedding_B): ParameterDict()
+          (lora_magnitude_vector): ModuleDict()
+        )
+        (to_k): lora.Linear(
+          (base_layer): Linear(in_features=2520, out_features=840, bias=False)
+          (lora_dropout): ModuleDict(
+            (default): Identity()
+          )
+          (lora_A): ModuleDict(
+            (default): Linear(in_features=2520, out_features=8, bias=False)
+          )
+          (lora_B): ModuleDict(
+            (default): Linear(in_features=8, out_features=840, bias=False)
+          )
+          (lora_embedding_A): ParameterDict()
+          (lora_embedding_B): ParameterDict()
+          (lora_magnitude_vector): ModuleDict()
+        )
+        (to_v): lora.Linear(
+          (base_layer): Linear(in_features=2520, out_features=840, bias=False)
+          (lora_dropout): ModuleDict(
+            (default): Identity()
+          )
+          (lora_A): ModuleDict(
+            (default): Linear(in_features=2520, out_features=8, bias=False)
+          )
+          (lora_B): ModuleDict(
+            (default): Linear(in_features=8, out_features=840, bias=False)
+          )
+          (lora_embedding_A): ParameterDict()
+          (lora_embedding_B): ParameterDict()
+          (lora_magnitude_vector): ModuleDict()
+        )
+        (to_out): ModuleList(
+          (0): lora.Linear(
+            (base_layer): Linear(in_features=2520, out_features=2520, bias=False)
+            (lora_dropout): ModuleDict(
+              (default): Identity()
+            )
+            (lora_A): ModuleDict(
+              (default): Linear(in_features=2520, out_features=8, bias=False)
+            )
+            (lora_B): ModuleDict(
+              (default): Linear(in_features=8, out_features=2520, bias=False)
+            )
+            (lora_embedding_A): ParameterDict()
+            (lora_embedding_B): ParameterDict()
+            (lora_magnitude_vector): ModuleDict()
+          )
+          (1): Dropout(p=0.0, inplace=False)
+        )
+      )
+      (feed_forward): LuminaFeedForward(
+        (linear_1): Linear(in_features=2520, out_features=10240, bias=False)
+        (linear_2): Linear(in_features=10240, out_features=2520, bias=False)
+        (linear_3): Linear(in_features=2520, out_features=10240, bias=False)
+      )
+      (norm1): LuminaRMSNormZero(
+        (silu): SiLU()
+        (linear): Linear(in_features=1024, out_features=10080, bias=True)
+        (norm): RMSNorm()
+      )
+      (ffn_norm1): RMSNorm()
+      (norm2): RMSNorm()
+      (ffn_norm2): RMSNorm()
+    )
+  )
+  (norm_out): LuminaLayerNormContinuous(
+    (silu): SiLU()
+    (linear_1): Linear(in_features=1024, out_features=2520, bias=True)
+    (norm): LayerNorm((2520,), eps=1e-06, elementwise_affine=False)
+    (linear_2): Linear(in_features=2520, out_features=64, bias=True)
+  )
+)
+2025-07-19 17:37:12,609 - INFO - __main__ - Total parameters (M): 3972.27
+2025-07-19 17:37:12,609 - INFO - __main__ - Trainable parameters (M): 5.11
+2025-07-19 17:37:12,611 - INFO - __main__ - ***** Prepare dataset *****
+2025-07-19 17:37:14,515 - INFO - __main__ - Time step distribution plot saved to /mnt/w/TKPM/OmniGen2/experiments/train_lqk_571723fe/t_distribution.png
+2025-07-19 17:37:14,515 - INFO - __main__ - Number of training samples: 30
+2025-07-19 17:37:14,521 - INFO - __main__ - ***** Prepare dataLoader *****
+2025-07-19 17:37:14,521 - INFO - __main__ - args.train.batch_size=2 args.train.gradient_accumulation_steps=2 accelerator.num_processes=2 args.train.global_batch_size=8
+2025-07-19 17:37:14,559 - INFO - __main__ - ***** Prepare everything with our accelerator *****
+2025-07-19 17:37:21,010 - INFO - __main__ - ***** Running training *****
+2025-07-19 17:37:21,010 - INFO - __main__ -   Num examples = 30
+2025-07-19 17:37:21,011 - INFO - __main__ -   Num batches each epoch = 7
+2025-07-19 17:37:21,011 - INFO - __main__ -   Num Epochs = 250
+2025-07-19 17:37:21,011 - INFO - __main__ -   Instantaneous batch size per device = 2
+2025-07-19 17:37:21,011 - INFO - __main__ -   Total train batch size (w. parallel, distributed & accumulation) = 8
+2025-07-19 17:37:21,012 - INFO - __main__ -   Gradient Accumulation steps = 2
+2025-07-19 17:37:21,012 - INFO - __main__ -   Total optimization steps = 1000
+2025-07-19 17:37:21,012 - INFO - __main__ - 
+2025-07-19 17:37:21,012 - INFO - __main__ - Steps:   0%|          | 0/1000 [00:00<?, ?it/s]

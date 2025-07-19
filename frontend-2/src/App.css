@@ -582,6 +582,59 @@ body {
   gap: 30px;
 }
 
+.subject-type-group {
+  text-align: center;
+  margin: 32px 0 24px 0;
+}
+.subject-type-label {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 12px;
+  font-size: 1.1rem;
+  color: #fff;
+  letter-spacing: 0.5px;
+}
+.subject-type-btn-group {
+  display: inline-flex;
+  gap: 32px;
+  justify-content: center;
+  align-items: center;
+  background: rgba(31, 41, 55, 0.5);
+  border: 1.5px solid rgba(139, 92, 246, 0.3);
+  border-radius: 16px;
+  padding: 10px 24px;
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.08);
+}
+.subject-type-btn {
+  cursor: pointer;
+  padding: 12px 36px;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  background: transparent;
+  color: #cbd5e1;
+  font-size: 1.1rem;
+  font-weight: 600;
+  transition: all 0.25s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.subject-type-btn input[type="radio"] {
+  accent-color: #8b5cf6;
+  margin-right: 10px;
+}
+.subject-type-btn:hover {
+  background: rgba(139, 92, 246, 0.12);
+  color: #fff;
+  border-color: #a855f7;
+}
+.subject-type-btn.active {
+  background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
+  color: #fff;
+  border-color: #a855f7;
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.18);
+}
+
 @media (max-width: 768px) {
   .header h1 {
     font-size: 2rem;
