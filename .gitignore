@@ -12,3 +12,5 @@ backend/schemas/__pycache__/*
 frontend/node_modules/*
 frontend-2/node_modules/*
 OmniGen2/experiments/*
+"*.safetensors" 
+"backend/models/" 
