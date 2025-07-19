@@ -8,60 +8,48 @@ import logging
 import torch
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import uvicorn
 
-# Add parent directories to path for imports
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'DreamO'))
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'OmniGen2-DFloat11'))
+# --- THAY ĐỔI: Import app_state và các routes ---
+import app_state 
+from routes import dreamo, omnigen2, training
 
 from models.dreamo_model import DreamOModel
 from models.omnigen2_model import OmniGen2Model
-from routes import dreamo, omnigen2, training
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Global model instances
-dreamo_model = None
-omnigen2_model = None
+# --- THAY ĐỔI: Loại bỏ các biến toàn cục ở đây ---
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Manage app lifespan - load models on startup"""
-    global dreamo_model, omnigen2_model
+    """Manage app lifespan - load all models on startup"""
     
-    logger.info("Loading models...")
+    logger.info("Loading all models on startup...")
     
     try:
-        # Load DreamO model first (cuda:0)
-        logger.info("Loading DreamO model on cuda:0...")
-        dreamo_model = DreamOModel()
-        logger.info("✅ DreamO model loaded successfully on cuda:0")
-        
-        # Load OmniGen2 model second (cuda:1)
+        # --- THAY ĐỔI: Cập nhật trạng thái trong app_state ---
         logger.info("Loading OmniGen2 model on cuda:1...")
-        omnigen2_model = OmniGen2Model()
+        app_state.omnigen2_model = OmniGen2Model(target_device='cuda:1')
         logger.info("✅ OmniGen2 model loaded successfully on cuda:1")
+        
+        logger.info("Loading DreamO model on cuda:0...")
+        app_state.dreamo_model = DreamOModel()
+        logger.info("✅ DreamO model loaded successfully on cuda:0")
         
         logger.info("🎉 All models loaded successfully!")
         
     except Exception as e:
-        logger.error(f"❌ Failed to load models: {e}")
-        # Don't raise here, let the app start with partial functionality
+        logger.error(f"❌ Failed to load models: {e}", exc_info=True)
         logger.warning("App will start with limited functionality")
         
     yield
     
-    # Cleanup on shutdown
     logger.info("Shutting down...")
-    if dreamo_model:
-        logger.info("Cleaning up DreamO model...")
-    if omnigen2_model:
-        logger.info("Cleaning up OmniGen2 model...")
 
 # Create FastAPI app with lifespan
 app = FastAPI(
@@ -93,22 +81,22 @@ async def root():
 @app.get("/health")
 async def health_check():
     """Detailed health check"""
-    global dreamo_model, omnigen2_model
     
     dreamo_info = {
-        "loaded": dreamo_model is not None,
-        "device": dreamo_model.get_device_info() if dreamo_model else None,
-        "healthy": dreamo_model.health_check() if dreamo_model else False
+        "loaded": app_state.dreamo_model is not None,
+        "device": app_state.dreamo_model.get_device_info() if app_state.dreamo_model else None,
+        "healthy": app_state.dreamo_model.health_check() if app_state.dreamo_model else False,
+        "status": "loaded" if app_state.dreamo_model else "not_loaded"
     }
     
     omnigen2_info = {
-        "loaded": omnigen2_model is not None,
-        "device": omnigen2_model.get_device_info() if omnigen2_model else None,
-        "healthy": omnigen2_model.health_check() if omnigen2_model else False
+        "loaded": app_state.omnigen2_model is not None,
+        "device": app_state.omnigen2_model.get_device_info() if app_state.omnigen2_model else None,
+        "healthy": app_state.omnigen2_model.health_check() if app_state.omnigen2_model else False
     }
     
     return {
-        "status": "healthy" if (dreamo_info["loaded"] or omnigen2_info["loaded"]) else "degraded",
+        "status": "healthy" if omnigen2_info["loaded"] and dreamo_info["loaded"] else "degraded",
         "models": {
             "dreamo": dreamo_info,
             "omnigen2": omnigen2_info
@@ -132,4 +120,4 @@ if __name__ == "__main__":
         port=8000,
         reload=True,
         log_level="info"
-    ) 
+    )

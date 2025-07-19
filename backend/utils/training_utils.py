@@ -221,7 +221,7 @@ class TrainingManager:
         
         return str(config_path)
     
-    def create_training_config(self, training_id: str, name_object: str, ultra_low_memory: bool = False, use_multi_gpu: bool = False, total_gpus: int = 1) -> str:
+    def create_training_config(self, training_id: str, name_object: str, ultra_low_memory: bool = False, use_multi_gpu: bool = False, total_gpus: int = 1, memory_mode: str = "standard") -> str:
         """Create config file for OmniGen2 training with optional ultra-low memory mode and multi-GPU support"""
         session_dir = self.base_dir / training_id
         dataset_config_path = session_dir / "dataset" / "train_config.yml"
@@ -251,12 +251,12 @@ class TrainingManager:
                 max_input_pixels = [1048576, 524288, 262144, 131072]  # Larger inputs
                 lora_rank = 16  # Larger LoRA rank for better quality
             else:
-                gradient_accumulation_steps = 4  # Increased for single GPU to maintain effective batch size
-                global_batch_size = 4  # 1 * 4 * 1 = 4 (maintains same effective batch size as multi-GPU)
-                dataloader_num_workers = 1
-                max_output_pixels = 524288  # 768x768 images
-                max_input_pixels = [524288, 524288, 262144, 131072]
-                lora_rank = 8
+                gradient_accumulation_steps = 8  # Even higher accumulation for single GPU extreme memory efficiency
+                global_batch_size = 8  # 1 * 8 * 1 = 8 (higher accumulation, same effective batch)
+                dataloader_num_workers = 0  # No workers to save memory
+                max_output_pixels = 262144  # 512x512 images - more aggressive reduction
+                max_input_pixels = [262144, 131072, 65536, 32768]  # Much smaller inputs
+                lora_rank = 4  # Smaller LoRA rank for memory savings
         
         # Base config
         training_config = {
@@ -268,12 +268,12 @@ class TrainingManager:
             "data": {
                 "data_path": str(dataset_config_path.absolute()),
                 "use_chat_template": True,
-                "maximum_text_tokens": 256 if ultra_low_memory else 888,  # Reduce text tokens in ultra low memory
+                "maximum_text_tokens": 128,  # Extremely low text tokens for all modes
                 "prompt_dropout_prob": 0.0001,
                 "ref_img_dropout_prob": 0.1,
                 "max_output_pixels": max_output_pixels,  # Dynamic based on memory mode
                 "max_input_pixels": max_input_pixels,  # Dynamic based on memory mode
-                "max_side_length": 1024 if ultra_low_memory else 2048,  # Reduce max side length
+                "max_side_length": 512,  # Much smaller images for memory savings
             },
             
             "model": {
@@ -284,17 +284,32 @@ class TrainingManager:
                 "arch_opt": {
                     "patch_size": 2,
                     "in_channels": 16,
-                    "hidden_size": 2520,
-                    "num_layers": 32,
-                    "num_refiner_layers": 2,
-                    "num_attention_heads": 21,
-                    "num_kv_heads": 7,
+                    "hidden_size": 2304,  # Slightly reduced hidden size for memory
+                    "num_layers": 24,  # Fewer layers for memory savings
+                    "num_refiner_layers": 1,  # Reduced refiner layers
+                    "num_attention_heads": 18,  # Fewer attention heads
+                    "num_kv_heads": 6,  # Fewer KV heads
                     "multiple_of": 256,
                     "norm_eps": 1e-05,
-                    "axes_dim_rope": [40, 40, 40],
-                    "axes_lens": [10000, 10000, 10000],
-                    "text_feat_dim": 2048,
+                    "axes_dim_rope": [32, 32, 32],  # Smaller rope dimensions
+                    "axes_lens": [8000, 8000, 8000],  # Smaller axes lengths
+                    "text_feat_dim": 1536,  # Reduced text feature dimension
                     "timestep_scale": 1000
+                },
+                
+                # Memory optimization options (CPU offload disabled due to training incompatibility)
+                "memory_optimization": {
+                    "enable_gradient_checkpointing": True,  # Always enable for memory savings
+                    "use_cpu_adam": memory_mode in ["extreme", "ultra"],  # CPU optimizer for low memory
+                    "gradient_accumulation_steps": gradient_accumulation_steps,  # Higher accumulation for memory efficiency
+                    "max_grad_norm": 1.0,  # Gradient clipping for stability
+                    "mixed_precision": "bf16" if memory_mode == "standard" else "fp16",  # FP16 for lower memory modes
+                    "dataloader_pin_memory": False,  # Disable pinned memory to save GPU memory
+                    "dataloader_num_workers": 0 if memory_mode in ["extreme", "ultra"] else 1,  # Reduce workers for memory
+                    "enable_compile": False,  # Disable torch.compile to save memory
+                    "empty_cache_steps": 5,  # Very frequent cache clearing for all modes
+                    "force_fp16": True,  # Force FP16 for maximum memory savings
+                    "reduce_precision": True  # Additional precision reduction flags
                 }
             },
             
@@ -308,7 +323,7 @@ class TrainingManager:
                 "global_batch_size": global_batch_size,  # Properly calculated for single GPU
                 "batch_size": batch_size,  # Always 1 for memory efficiency
                 "gradient_accumulation_steps": gradient_accumulation_steps,  # Adjusted for single GPU
-                "max_train_steps": 200 if ultra_low_memory else 1000,  # Drastically reduce steps for ultra low memory
+                "max_train_steps": 100,  # Much fewer steps to test stability first
                 "dataloader_num_workers": dataloader_num_workers,  # Dynamic workers based on memory
                 
                 "learning_rate": 1e-6 if ultra_low_memory else 8e-7,  # Slightly higher LR for fewer steps
@@ -318,6 +333,10 @@ class TrainingManager:
                 "warmup_lr_init": 1e-18,
                 "warmup_prefix": True,
                 "t_in_epochs": False,
+                
+                # Memory-efficient settings
+                "enable_xformers_memory_efficient_attention": True,  # Enable memory efficient attention
+                "gradient_checkpointing": True,  # Enable gradient checkpointing for memory savings
                 
                 "use_8bit_adam": True,  # Enable 8-bit Adam for memory savings
                 "adam_beta1": 0.9,
@@ -398,9 +417,9 @@ class TrainingManager:
                 "fsdp_config": {
                     "fsdp_auto_wrap_policy": "TRANSFORMER_BASED_WRAP",
                     "fsdp_backward_prefetch": "BACKWARD_PRE",
-                    "fsdp_cpu_ram_efficient_loading": True if memory_mode in ["extreme", "ultra"] else False,
+                    "fsdp_cpu_ram_efficient_loading": True,  # Always enable for FSDP stability
                     "fsdp_forward_prefetch": False,
-                    "fsdp_offload_params": True if memory_mode == "extreme" else False,
+                    "fsdp_offload_params": True if memory_mode in ["extreme", "ultra"] else False,
                     "fsdp_sharding_strategy": "FULL_SHARD",  # Most memory efficient
                     "fsdp_state_dict_type": "SHARDED_STATE_DICT",
                     "fsdp_sync_module_states": True,
@@ -548,7 +567,7 @@ class TrainingManager:
                     accelerate_config = self.create_accelerate_config(best_gpu_id, "extreme")
                 
                 # Create ultra-low memory training config with smallest possible settings
-                config_path = self.create_training_config(training_id, name_object, ultra_low_memory=True, use_multi_gpu=use_multi_gpu, total_gpus=total_gpus)
+                config_path = self.create_training_config(training_id, name_object, ultra_low_memory=True, use_multi_gpu=use_multi_gpu, total_gpus=total_gpus, memory_mode="extreme")
                 
                 # Extreme low memory training - maximum CPU offloading
                 cmd = [
@@ -568,7 +587,7 @@ class TrainingManager:
                     accelerate_config = self.create_accelerate_config(best_gpu_id, "ultra")
                 
                 # Create ultra-low memory training config
-                config_path = self.create_training_config(training_id, name_object, ultra_low_memory=True, use_multi_gpu=use_multi_gpu, total_gpus=total_gpus)
+                config_path = self.create_training_config(training_id, name_object, ultra_low_memory=True, use_multi_gpu=use_multi_gpu, total_gpus=total_gpus, memory_mode="ultra")
                 
                 # Ultra low memory training - maximum CPU offloading
                 cmd = [
@@ -588,7 +607,7 @@ class TrainingManager:
                     accelerate_config = self.create_accelerate_config(best_gpu_id, "standard")
                 
                 # Create standard training config
-                config_path = self.create_training_config(training_id, name_object, ultra_low_memory=False, use_multi_gpu=use_multi_gpu, total_gpus=total_gpus)
+                config_path = self.create_training_config(training_id, name_object, ultra_low_memory=False, use_multi_gpu=use_multi_gpu, total_gpus=total_gpus, memory_mode="standard")
                 
                 # Standard training with optimizations
                 cmd = [
@@ -721,9 +740,104 @@ class TrainingManager:
                 return True
             else:
                 error_message = stderr if stderr else "Unknown error"
-                logger.error(f"Training failed with return code {return_code}:\n{error_message}")
-                self.update_status(training_id, "failed", 0.0, f"Training failed: {error_message}")
-                return False
+                
+                # Check if this is a multi-GPU FSDP OOM error that can be fallback to single GPU
+                if (use_multi_gpu and 
+                    ("out of memory" in error_message.lower() or 
+                     "cuda driver error" in error_message.lower()) and
+                    ("_sync_module_params_and_buffers" in error_message or 
+                     "FSDP" in error_message or
+                     "accelerator.prepare" in error_message)):
+                    
+                    logger.warning(f"🔄 Multi-GPU FSDP initialization failed due to memory constraints. Falling back to single GPU mode...")
+                    self.update_status(training_id, "training", 0.3, "Multi-GPU failed, retrying with single GPU...")
+                    
+                    # Fallback to single GPU with best memory
+                    gpu_memory_available = []
+                    for gpu_id in range(total_gpus):
+                        try:
+                            gpu_memory_free = torch.cuda.get_device_properties(gpu_id).total_memory / (1024 ** 3) - torch.cuda.memory_allocated(gpu_id) / (1024 ** 3)
+                            gpu_memory_available.append(gpu_memory_free)
+                        except:
+                            gpu_memory_available.append(0)
+                    
+                    best_gpu_id = gpu_memory_available.index(max(gpu_memory_available))
+                    best_gpu_memory = gpu_memory_available[best_gpu_id]
+                    
+                    # Determine memory mode for fallback
+                    if best_gpu_memory < 8.0:
+                        fallback_mode = "extreme"
+                    elif best_gpu_memory < 10.0:
+                        fallback_mode = "ultra"
+                    else:
+                        fallback_mode = "standard"
+                    
+                    logger.info(f"🔧 Retrying with single GPU {best_gpu_id} ({best_gpu_memory:.2f}GB) in {fallback_mode} mode")
+                    
+                    # Create fallback config
+                    fallback_config = self.create_accelerate_config(best_gpu_id, fallback_mode, use_multi_gpu=False)
+                    fallback_training_config = self.create_training_config(
+                        training_id, name_object, 
+                        ultra_low_memory=(fallback_mode in ["extreme", "ultra"]),
+                        use_multi_gpu=False, total_gpus=1, memory_mode=fallback_mode
+                    )
+                    
+                    fallback_cmd = [
+                        "accelerate", "launch",
+                        "--config_file", fallback_config,
+                        "../OmniGen2/train.py",
+                        "--config", fallback_training_config,
+                    ]
+                    
+                    # Set environment for fallback
+                    fallback_env = os.environ.copy()
+                    fallback_env.update({
+                        "CUDA_VISIBLE_DEVICES": str(best_gpu_id),
+                        "TRITON_CACHE_DISABLE": "1",
+                        "TRITON_DISABLE_AUTOTUNE": "1",
+                        "PYTORCH_CUDA_MEMORY_FRACTION": "0.95",
+                    })
+                    
+                    logger.info(f"🔄 Executing fallback command: {' '.join(fallback_cmd)}")
+                    
+                    # Execute fallback
+                    fallback_process = await asyncio.create_subprocess_exec(
+                        *fallback_cmd,
+                        stdout=asyncio.subprocess.PIPE,
+                        stderr=asyncio.subprocess.PIPE,
+                        cwd=str(Path.cwd()),
+                        env=fallback_env,
+                    )
+                    
+                    # Monitor fallback training
+                    logger.info("Starting fallback training process...")
+                    while True:
+                        fallback_output = await fallback_process.stdout.readline()
+                        if fallback_output:
+                            line = fallback_output.decode().strip()
+                            logger.info(f"Fallback Training: {line}")
+                            if "step" in line.lower() and "loss" in line.lower():
+                                self.update_status(training_id, "training", 0.6, f"Single GPU training: {line}")
+                        else:
+                            break
+                    
+                    fallback_return_code = await fallback_process.wait()
+                    fallback_stderr_data = await fallback_process.stderr.read()
+                    
+                    if fallback_return_code == 0:
+                        logger.info("✅ Fallback to single GPU training succeeded!")
+                        self.update_status(training_id, "converting", 0.8, "Converting model to HuggingFace format...")
+                        await self.convert_checkpoint(training_id, fallback_training_config)
+                        return True
+                    else:
+                        fallback_error = fallback_stderr_data.decode() if fallback_stderr_data else "Unknown fallback error"
+                        logger.error(f"Fallback training also failed:\n{fallback_error}")
+                        self.update_status(training_id, "failed", 0.0, f"Both multi-GPU and single GPU training failed: {fallback_error}")
+                        return False
+                else:
+                    logger.error(f"Training failed with return code {return_code}:\n{error_message}")
+                    self.update_status(training_id, "failed", 0.0, f"Training failed: {error_message}")
+                    return False
                 
         except Exception as e:
             logger.error(f"Training error: {str(e)}")

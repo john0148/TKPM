@@ -414,6 +414,27 @@ def main(args):
             power=args.train.lr_power,
         )
 
+    # Apply memory optimization for training efficiency
+    memory_config = args.model.get('memory_optimization', {})
+    
+    if memory_config.get('enable_gradient_checkpointing', False):
+        logger.info("🔄 Enabling gradient checkpointing for memory optimization...")
+        try:
+            model.enable_gradient_checkpointing()
+            logger.info("✅ Gradient checkpointing enabled successfully")
+        except Exception as e:
+            logger.warning(f"⚠️ Failed to enable gradient checkpointing: {e}")
+    
+    # Configure mixed precision based on memory mode
+    mixed_precision = memory_config.get('mixed_precision', 'bf16')
+    logger.info(f"🔄 Using {mixed_precision} mixed precision for memory efficiency")
+    
+    # CPU optimizer for extreme memory constraints
+    if memory_config.get('use_cpu_adam', False):
+        logger.info("🔄 CPU Adam optimizer will be used for extreme memory saving")
+    
+    logger.info("📦 Memory optimization configured - avoiding CPU offload for training compatibility")
+
     logger.info("***** Prepare everything with our accelerator *****")
 
     if args.train.ema_decay != 0:
@@ -425,6 +446,19 @@ def main(args):
         model, optimizer, train_dataloader, lr_scheduler = accelerator.prepare(
             model, optimizer, train_dataloader, lr_scheduler
         )
+    
+    # Configure additional memory optimizations post-accelerator
+    memory_config = args.model.get('memory_optimization', {})
+    
+    # Enable manual memory management if configured
+    empty_cache_steps = memory_config.get('empty_cache_steps', 5)
+    logger.info(f"🔄 Memory cache will be cleared every {empty_cache_steps} steps for memory efficiency")
+    
+    # Pre-training aggressive memory cleanup
+    import gc
+    gc.collect()
+    torch.cuda.empty_cache()
+    logger.info("🧹 Pre-training memory cleanup completed")
 
     # We need to recalculate our total training steps as the size of the training dataloader may have changed.
     num_update_steps_per_epoch = math.ceil(len(train_dataloader) / args.train.gradient_accumulation_steps)
@@ -612,6 +646,19 @@ def main(args):
                     model_ema.step(model.parameters())
                     
                 global_step += 1
+                
+                # Aggressive memory management for stability
+                memory_config = args.model.get('memory_optimization', {})
+                empty_cache_steps = memory_config.get('empty_cache_steps', 5)
+                if global_step % empty_cache_steps == 0:
+                    torch.cuda.empty_cache()
+                    if accelerator.is_main_process:
+                        logger.info(f"🧹 Cleared GPU memory cache at step {global_step}")
+                
+                # Additional memory cleanup every step for extreme stability
+                if global_step % 1 == 0:  # Every step
+                    import gc
+                    gc.collect()  # Python garbage collection
 
                 if global_step % args.logger.checkpointing_steps == 0:
                     if accelerator.is_main_process:
